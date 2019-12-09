@@ -26,10 +26,10 @@ import (
 	"github.com/allegro/bigcache"
 	"github.com/truechain/truechain-engineering-code/common"
 	//"github.com/truechain/truechain-engineering-code/ethdb"
-	"github.com/truechain/truechain-engineering-code/log"
-	"github.com/truechain/truechain-engineering-code/rlp"
 	"github.com/truechain/truechain-engineering-code/etruedb"
+	"github.com/truechain/truechain-engineering-code/log"
 	"github.com/truechain/truechain-engineering-code/metrics"
+	"github.com/truechain/truechain-engineering-code/rlp"
 )
 
 var (
@@ -57,20 +57,11 @@ var secureKeyPrefix = []byte("secure-key-")
 // secureKeyLength is the length of the above prefix + 32byte hash.
 const secureKeyLength = 11 + 32
 
-// DatabaseReader wraps the Get and Has method of a backing store for the trie.
-type DatabaseReader interface {
-	// Get retrieves the value associated with key from the database.
-	Get(key []byte) (value []byte, err error)
-
-	// Has retrieves whether a key is present in the database.
-	Has(key []byte) (bool, error)
-}
-
 // Database is an intermediate write layer between the trie data structures and
 // the disk database. The aim is to accumulate trie writes in-memory and only
 // periodically flush a couple tries to disk, garbage collecting the remainder.
 type Database struct {
-	diskdb etruedb.Database // Persistent storage for matured trie nodes
+	diskdb etruedb.KeyValueStore // Persistent storage for matured trie nodes
 
 	cleans  *bigcache.BigCache          // GC friendly memory cache of clean node RLPs
 	dirties map[common.Hash]*cachedNode // Data and references relationships of dirty nodes
@@ -273,14 +264,14 @@ func expandNode(hash hashNode, n node, cachegen uint16) node {
 // NewDatabase creates a new trie database to store ephemeral trie content before
 // its written out to disk or garbage collected. No read cache is created, so all
 // data retrievals will hit the underlying disk database.
-func NewDatabase(diskdb etruedb.Database) *Database {
+func NewDatabase(diskdb etruedb.KeyValueStore) *Database {
 	return NewDatabaseWithCache(diskdb, 0)
 }
 
 // NewDatabaseWithCache creates a new trie database to store ephemeral trie content
 // before its written out to disk or garbage collected. It also acts as a read cache
 // for nodes loaded from disk.
-func NewDatabaseWithCache(diskdb etruedb.Database, cache int) *Database {
+func NewDatabaseWithCache(diskdb etruedb.KeyValueStore, cache int) *Database {
 	var cleans *bigcache.BigCache
 	if cache > 0 {
 		cleans, _ = bigcache.NewBigCache(bigcache.Config{
@@ -300,7 +291,7 @@ func NewDatabaseWithCache(diskdb etruedb.Database, cache int) *Database {
 }
 
 // DiskDB retrieves the persistent storage backing the trie database.
-func (db *Database) DiskDB() DatabaseReader {
+func (db *Database) DiskDB() etruedb.Reader {
 	return db.diskdb
 }
 
@@ -685,6 +676,7 @@ func (db *Database) Commit(node common.Hash, report bool) error {
 		}
 		if batch.ValueSize() > etruedb.IdealBatchSize {
 			if err := batch.Write(); err != nil {
+				db.lock.RUnlock()
 				return err
 			}
 			batch.Reset()
@@ -814,7 +806,7 @@ func (db *Database) verifyIntegrity() {
 		db.accumulate(child, reachable)
 	}
 	// Find any unreachable but cached nodes
-	unreachable := []string{}
+	var unreachable []string
 	for hash, node := range db.dirties {
 		if _, ok := reachable[hash]; !ok {
 			unreachable = append(unreachable, fmt.Sprintf("%x: {Node: %v, Parents: %d, Prev: %x, Next: %x}",

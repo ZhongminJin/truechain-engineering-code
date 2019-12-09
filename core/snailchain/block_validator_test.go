@@ -17,6 +17,7 @@
 package snailchain
 
 import (
+	"github.com/truechain/truechain-engineering-code/core/snailchain/rawdb"
 	"reflect"
 	"testing"
 
@@ -84,7 +85,7 @@ func TestValidateBody(t *testing.T) {
 
 func makeChain(n int, i int) (*SnailBlockChain, *core.BlockChain, *types.SnailBlock) {
 	var (
-		testdb = etruedb.NewMemDatabase()
+		testdb = rawdb.NewMemoryDatabase()
 		// genesis = new(core.Genesis).MustSnailCommit(testdb)
 		genesis = core.DefaultGenesisBlock()
 		engine  = minerva.NewFaker()

@@ -18,6 +18,7 @@ package core
 
 import (
 	"fmt"
+	"github.com/truechain/truechain-engineering-code/core/rawdb"
 	"math/big"
 
 	"github.com/truechain/truechain-engineering-code/common"
@@ -337,7 +338,7 @@ func NewCanonical(engine consensus.Engine, n int, full bool) (etruedb.Database, 
 // header only chain.
 func newCanonical(engine consensus.Engine, n int, full bool) (etruedb.Database, *BlockChain, error) {
 	var (
-		db = etruedb.NewMemDatabase()
+		db = rawdb.NewMemoryDatabase()
 	)
 
 	BaseGenesis := DefaultGenesisBlock()

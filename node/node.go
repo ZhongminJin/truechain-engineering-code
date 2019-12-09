@@ -19,6 +19,7 @@ package node
 import (
 	"errors"
 	"fmt"
+	"github.com/truechain/truechain-engineering-code/core/rawdb"
 	"net"
 	"os"
 	"path/filepath"
@@ -26,12 +27,12 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/truechain/truechain-engineering-code/log"
 	"github.com/prometheus/prometheus/util/flock"
 	"github.com/truechain/truechain-engineering-code/accounts"
 	"github.com/truechain/truechain-engineering-code/etruedb"
 	"github.com/truechain/truechain-engineering-code/event"
 	"github.com/truechain/truechain-engineering-code/internal/debug"
+	"github.com/truechain/truechain-engineering-code/log"
 	"github.com/truechain/truechain-engineering-code/p2p"
 	"github.com/truechain/truechain-engineering-code/rpc"
 )
@@ -594,11 +595,11 @@ func (n *Node) Config() *Config {
 // OpenDatabase opens an existing database with the given name (or creates one if no
 // previous can be found) from within the node's instance directory. If the node is
 // ephemeral, a memory database is returned.
-func (n *Node) OpenDatabase(name string, cache, handles int) (etruedb.Database, error) {
+func (n *Node) OpenDatabase(name string, cache, handles int, namespace string) (etruedb.Database, error) {
 	if n.config.DataDir == "" {
-		return etruedb.NewMemDatabase(), nil
+		return rawdb.NewMemoryDatabase(), nil
 	}
-	return etruedb.NewLDBDatabase(n.config.ResolvePath(name), cache, handles)
+	return rawdb.NewLevelDBDatabase(n.config.ResolvePath(name), cache, handles, namespace)
 }
 
 // ResolvePath returns the absolute path of a resource in the instance directory.

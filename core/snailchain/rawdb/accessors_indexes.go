@@ -18,14 +18,15 @@ package rawdb
 
 import (
 	"github.com/truechain/truechain-engineering-code/common"
+	"github.com/truechain/truechain-engineering-code/core/types"
+	"github.com/truechain/truechain-engineering-code/etruedb"
 	"github.com/truechain/truechain-engineering-code/log"
 	"github.com/truechain/truechain-engineering-code/rlp"
-	"github.com/truechain/truechain-engineering-code/core/types"
 )
 
 // ReadFtLookupEntry retrieves the positional metadata associated with a fruit
 // hash to allow retrieving the fruit by hash.
-func ReadFtLookupEntry(db DatabaseReader, fastHash common.Hash) (common.Hash, uint64, uint64) {
+func ReadFtLookupEntry(db etruedb.Reader, fastHash common.Hash) (common.Hash, uint64, uint64) {
 	data, _ := db.Get(ftLookupKey(fastHash))
 	if len(data) == 0 {
 		return common.Hash{}, 0, 0
@@ -40,7 +41,7 @@ func ReadFtLookupEntry(db DatabaseReader, fastHash common.Hash) (common.Hash, ui
 
 // WriteFtLookupEntries stores a positional metadata for every fruit from
 // a block, enabling hash based fruit lookups.
-func WriteFtLookupEntries(db DatabaseWriter, block *types.SnailBlock) {
+func WriteFtLookupEntries(db etruedb.Writer, block *types.SnailBlock) {
 	for i, ft := range block.Fruits() {
 		entry := FtLookupEntry{
 			BlockHash:  block.Hash(),
@@ -58,13 +59,13 @@ func WriteFtLookupEntries(db DatabaseWriter, block *types.SnailBlock) {
 }
 
 // DeleteFtLookupEntry removes all fruit data associated with a hash.
-func DeleteFtLookupEntry(db DatabaseDeleter, fastHash common.Hash) {
+func DeleteFtLookupEntry(db etruedb.Deleter, fastHash common.Hash) {
 	db.Delete(ftLookupKey(fastHash))
 }
 
 // ReadFruit retrieves a specific fruit from the database, along with
 // its added positional metadata.
-func ReadFruit(db DatabaseReader, fastHash common.Hash) (*types.SnailBlock, common.Hash, uint64, uint64) {
+func ReadFruit(db etruedb.Reader, fastHash common.Hash) (*types.SnailBlock, common.Hash, uint64, uint64) {
 	blockHash, blockNumber, ftIndex := ReadFtLookupEntry(db, fastHash)
 
 	if blockHash == (common.Hash{}) {
@@ -82,7 +83,7 @@ func ReadFruit(db DatabaseReader, fastHash common.Hash) (*types.SnailBlock, comm
 
 // WriteFtHeadLookupEntries stores a positional metadata for every fruit from
 // a block, enabling hash based fruit lookups.
-func WriteFtHeadLookupEntries(db DatabaseWriter, head *types.SnailHeader, fruitHeads []*types.SnailHeader) {
+func WriteFtHeadLookupEntries(db etruedb.Writer, head *types.SnailHeader, fruitHeads []*types.SnailHeader) {
 	for i, ft := range fruitHeads {
 		entry := FtLookupEntry{
 			BlockHash:  head.Hash(),
@@ -101,7 +102,7 @@ func WriteFtHeadLookupEntries(db DatabaseWriter, head *types.SnailHeader, fruitH
 
 // ReadFruitHead retrieves a specific fruit from the database, along with
 // its added positional metadata.
-func ReadFruitHead(db DatabaseReader, fastHash common.Hash) (*types.SnailHeader, common.Hash, uint64, uint64) {
+func ReadFruitHead(db etruedb.Reader, fastHash common.Hash) (*types.SnailHeader, common.Hash, uint64, uint64) {
 	blockHash, blockNumber, ftIndex := ReadFtLookupEntry(db, fastHash)
 
 	if blockHash == (common.Hash{}) {

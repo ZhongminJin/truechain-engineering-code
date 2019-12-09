@@ -18,6 +18,7 @@ package snailchain
 
 import (
 	"fmt"
+	"github.com/truechain/truechain-engineering-code/core/rawdb"
 	"io/ioutil"
 	"math/big"
 	"os"
@@ -46,7 +47,7 @@ var genesispool *core.Genesis
 var snailGenesis *types.SnailBlock
 
 func poolinit() {
-	peerDbpool = etruedb.NewMemDatabase()
+	peerDbpool = rawdb.NewMemoryDatabase()
 	testSnailPoolConfig = DefaultSnailPoolConfig
 	chainConfigpool = params.TestChainConfig
 	testSnailPoolConfig.Journal = ""

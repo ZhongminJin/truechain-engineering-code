@@ -17,17 +17,17 @@
 package rawdb
 
 import (
+	"github.com/truechain/truechain-engineering-code/core/rawdb"
 	"testing"
 
 	"github.com/truechain/truechain-engineering-code/common"
 	"github.com/truechain/truechain-engineering-code/core/types"
-	"github.com/truechain/truechain-engineering-code/etruedb"
 	"github.com/truechain/truechain-engineering-code/params"
 )
 
 // Tests that positional lookup metadata can be stored and retrieved.
 func TestLookupStorage(t *testing.T) {
-	db := etruedb.NewMemDatabase()
+	db := rawdb.NewMemoryDatabase()
 
 	ft1 := types.NewSnailBlockWithHeader(&types.SnailHeader{FastHash: common.HexToHash("0x17a333ecba3dd040a0ab06d131a4b47e0d261fe8a8f0d43c8dd79f0f9d99020f"), Extra: []byte("fruit1 header")})
 	ft2 := types.NewSnailBlockWithHeader(&types.SnailHeader{FastHash: common.HexToHash("0x27a333ecba3dd040a0ab06d131a4b47e0d261fe8a8f0d43c8dd79f0f9d99020f"), Extra: []byte("fruit2 header")})

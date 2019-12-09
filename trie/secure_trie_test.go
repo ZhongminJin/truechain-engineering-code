@@ -18,24 +18,24 @@ package trie
 
 import (
 	"bytes"
+	"github.com/truechain/truechain-engineering-code/etruedb/memorydb"
 	"runtime"
 	"sync"
 	"testing"
 
 	"github.com/truechain/truechain-engineering-code/common"
 	"github.com/truechain/truechain-engineering-code/crypto"
-	"github.com/truechain/truechain-engineering-code/etruedb"
 )
 
 func newEmptySecure() *SecureTrie {
-	trie, _ := NewSecure(common.Hash{}, NewDatabase(etruedb.NewMemDatabase()), 0)
+	trie, _ := NewSecure(common.Hash{}, NewDatabase(memorydb.New()), 0)
 	return trie
 }
 
 // makeTestSecureTrie creates a large enough secure trie for testing.
 func makeTestSecureTrie() (*Database, *SecureTrie, map[string][]byte) {
 	// Create an empty trie
-	triedb := NewDatabase(etruedb.NewMemDatabase())
+	triedb := NewDatabase(memorydb.New())
 
 	trie, _ := NewSecure(common.Hash{}, triedb, 0)
 

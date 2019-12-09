@@ -20,13 +20,13 @@ import (
 	"crypto/ecdsa"
 	"fmt"
 	"github.com/truechain/truechain-engineering-code/common"
-	"github.com/truechain/truechain-engineering-code/crypto"
-	"github.com/truechain/truechain-engineering-code/log"
 	"github.com/truechain/truechain-engineering-code/consensus/minerva"
+	"github.com/truechain/truechain-engineering-code/core/rawdb"
 	"github.com/truechain/truechain-engineering-code/core/state"
 	"github.com/truechain/truechain-engineering-code/core/types"
 	"github.com/truechain/truechain-engineering-code/core/vm"
-	"github.com/truechain/truechain-engineering-code/etruedb"
+	"github.com/truechain/truechain-engineering-code/crypto"
+	"github.com/truechain/truechain-engineering-code/log"
 	"github.com/truechain/truechain-engineering-code/params"
 	"math/big"
 	"os"
@@ -40,7 +40,7 @@ func init() {
 func ExampleGenerateChain() {
 	var (
 		chainId = big.NewInt(3)
-		db      = etruedb.NewMemDatabase()
+		db      = rawdb.NewMemoryDatabase()
 
 		key1, _ = crypto.HexToECDSA("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
 		key2, _ = crypto.HexToECDSA("8a1f9a8f95be41cd7ccb6168179afb4504aefe388d1e14474d32c45c72ce7b7a")
@@ -116,7 +116,7 @@ func TestTransactionCost(t *testing.T) {
 
 	params.MinimumFruits = 1
 	var (
-		db    = etruedb.NewMemDatabase()
+		db    = rawdb.NewMemoryDatabase()
 		pow   = minerva.NewFaker()
 		gspec = &Genesis{
 			Config: params.TestChainConfig,
@@ -143,7 +143,7 @@ func TestTransactionCost(t *testing.T) {
 	blockchain, _ := NewBlockChain(db, nil, gspec.Config, pow, vm.Config{})
 	defer blockchain.Stop()
 
-	fastBlocks, _ := GenerateChain(gspec.Config, fastParent, pow, db, params.MinimumFruits, func(i int, gen *BlockGen) () {
+	fastBlocks, _ := GenerateChain(gspec.Config, fastParent, pow, db, params.MinimumFruits, func(i int, gen *BlockGen) {
 		tx1, _ := types.SignTx(types.NewTransaction(gen.TxNonce(addresses[0]), addresses[1], tx_amount, params.TxGas, tx_price, nil), signer, privateKeys[0])
 		gen.AddTx(tx1)
 	})
@@ -171,7 +171,7 @@ func TestTransactionCost(t *testing.T) {
 		log.Error("[TestTransactionCost error]:tx1 gas is not equal")
 	}
 	//test transaction2  payment
-	fastBlocks, _ = GenerateChain(gspec.Config, fastParent, pow, db, params.MinimumFruits, func(i int, gen *BlockGen) () {
+	fastBlocks, _ = GenerateChain(gspec.Config, fastParent, pow, db, params.MinimumFruits, func(i int, gen *BlockGen) {
 		signTx_sender, _ := types.SignTx(types.NewTransaction_Payment(gen.TxNonce(addresses[0]), addresses[1], tx_amount, tx_fee, params.TxGas, tx_price, nil, addresses[2]), signer, privateKeys[0])
 		tx2, _ := types.SignTx_Payment(signTx_sender, signer, privateKeys[2])
 		gen.AddTx(tx2)
@@ -194,7 +194,7 @@ func TestTransactionCost(t *testing.T) {
 	tx2_value := new(big.Int).Add(tx_amount, tx_fee)
 	tx2_gas := new(big.Int).Mul(tx_price, big.NewInt(int64(params.TxGas)))
 	if new(big.Int).Add(tx2_addr0_balance, tx2_value).Cmp(tx1_addr0_balance) != 0 {
-		log.Info("[TestTransactionCost info]:", " tx2_value", tx2_value, "addr0_balance", tx2_addr0_balance, )
+		log.Info("[TestTransactionCost info]:", " tx2_value", tx2_value, "addr0_balance", tx2_addr0_balance)
 		log.Error("[TestTransactionCost error]:tx2 tx2_addr0_balance execution error")
 	}
 	if new(big.Int).Sub(tx2_addr1_balance, tx_amount).Cmp(tx1_addr1_balance) != 0 {
@@ -232,16 +232,16 @@ func getCommitteeMemberReward(pow *minerva.Minerva, statedb *state.StateDB) (bal
 	balance_get = new(big.Int)
 	for _, member := range members {
 		balance := statedb.GetBalance(member.Coinbase)
-	if reward.Cmp(balance) != 0 {
-		return nil, false
+		if reward.Cmp(balance) != 0 {
+			return nil, false
+		}
+		balance_get = new(big.Int).Add(balance_get, balance)
+		log.Info("getBalance[committe member]", "addr", member.Coinbase, "balance", statedb.GetBalance(member.Coinbase))
 	}
-	balance_get = new(big.Int).Add(balance_get, balance)
-	log.Info("getBalance[committe member]", "addr", member.Coinbase, "balance", statedb.GetBalance(member.Coinbase))
-}
 	return balance_get, true
 }
 
-func getAddressBalance(addresses [] common.Address, statedb *state.StateDB) (balance_given *big.Int) {
+func getAddressBalance(addresses []common.Address, statedb *state.StateDB) (balance_given *big.Int) {
 	balance_given = new(big.Int)
 	for _, addr := range addresses {
 		balance_given = new(big.Int).Add(balance_given, statedb.GetBalance(addr))
@@ -259,7 +259,7 @@ func getAddressBalance(addresses [] common.Address, statedb *state.StateDB) (bal
 //		addr2   = crypto.PubkeyToAddress(key2.PublicKey)
 //		addr3   = crypto.PubkeyToAddress(key3.PublicKey)
 //		addr4   = crypto.PubkeyToAddress(key4.PublicKey)
-//		db      = etruedb.NewMemDatabase()
+//		db      = rawdb.NewMemoryDatabase()
 //	)
 //	recvAddr := crypto.CreateAddress(common.Address{0}, 10)
 //	// Ensure that key1 has some funds in the genesis block.
@@ -338,8 +338,8 @@ func getAddressBalance(addresses [] common.Address, statedb *state.StateDB) (bal
 //		addr2   = crypto.PubkeyToAddress(key2.PublicKey)
 //		addr3   = crypto.PubkeyToAddress(key3.PublicKey)
 //		addr4   = crypto.PubkeyToAddress(key4.PublicKey)
-//		db      = etruedb.NewMemDatabase()
-//		tmpDB   = etruedb.NewMemDatabase()
+//		db      = rawdb.NewMemoryDatabase()
+//		tmpDB   = rawdb.NewMemoryDatabase()
 //	)
 //	recvAddr := crypto.CreateAddress(common.Address{0}, 10)
 //	recvAddr2 := crypto.CreateAddress(common.Address{0}, 50)
@@ -445,7 +445,7 @@ func getAddressBalance(addresses [] common.Address, statedb *state.StateDB) (bal
 //
 //func verifyInBatch(sum, count int) {
 //	var (
-//		db = etruedb.NewMemDatabase()
+//		db = rawdb.NewMemoryDatabase()
 //	)
 //	type tmpItem struct {
 //		sign []byte

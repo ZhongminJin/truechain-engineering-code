@@ -18,10 +18,11 @@ package miner
 
 import (
 	"fmt"
+	"github.com/truechain/truechain-engineering-code/core/rawdb"
 	"testing"
 
-	"github.com/truechain/truechain-engineering-code/common"
 	"github.com/truechain/truechain-engineering-code/accounts"
+	"github.com/truechain/truechain-engineering-code/common"
 	"github.com/truechain/truechain-engineering-code/consensus"
 	"github.com/truechain/truechain-engineering-code/consensus/minerva"
 	"github.com/truechain/truechain-engineering-code/core"
@@ -64,7 +65,7 @@ type testWorkerBackend struct {
 
 func newTestWorkerBackend(t *testing.T, chainConfig *params.ChainConfig, engine consensus.Engine, n int) *testWorkerBackend {
 	var (
-		db      = etruedb.NewMemDatabase()
+		db      = rawdb.NewMemoryDatabase()
 		genesis = core.DefaultGenesisBlock()
 	)
 	snailChainLocal, fastChainLocal = snailchain.MakeChain(fastChainHight, blockNum, genesis, minerva.NewFaker())
@@ -105,7 +106,7 @@ func TestCommitFastBlock(t *testing.T) {
 	)
 	engine := minerva.NewFaker()
 
-	chainDb := etruedb.NewMemDatabase()
+	chainDb := rawdb.NewMemoryDatabase()
 	chainConfig, _, _, _ := core.SetupGenesisBlock(chainDb, core.DefaultGenesisBlock())
 	//Miner := New(snailChainLocal, nil, nil, snailChainLocal.Engine(), nil, false, nil)
 	worker, _ := newTestWorker(t, chainConfig, engine, 1)
@@ -192,7 +193,7 @@ func TestCommitFruits(t *testing.T) {
 	)
 	engine := minerva.NewFaker()
 
-	chainDb := etruedb.NewMemDatabase()
+	chainDb := rawdb.NewMemoryDatabase()
 	chainConfig, _, _, _ := core.SetupGenesisBlock(chainDb, core.DefaultGenesisBlock())
 	//Miner := New(snailChainLocal, nil, nil, snailChainLocal.Engine(), nil, false, nil)
 	worker, _ := newTestWorker(t, chainConfig, engine, 1)

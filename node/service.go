@@ -17,6 +17,7 @@
 package node
 
 import (
+	"github.com/truechain/truechain-engineering-code/core/rawdb"
 	"reflect"
 
 	"github.com/truechain/truechain-engineering-code/accounts"
@@ -39,11 +40,11 @@ type ServiceContext struct {
 // OpenDatabase opens an existing database with the given name (or creates one
 // if no previous can be found) from within the node's data directory. If the
 // node is an ephemeral one, a memory database is returned.
-func (ctx *ServiceContext) OpenDatabase(name string, cache int, handles int) (etruedb.Database, error) {
+func (ctx *ServiceContext) OpenDatabase(name string, cache int, handles int, namespace string) (etruedb.Database, error) {
 	if ctx.config.DataDir == "" {
-		return etruedb.NewMemDatabase(), nil
+		return rawdb.NewMemoryDatabase(), nil
 	}
-	db, err := etruedb.NewLDBDatabase(ctx.config.ResolvePath(name), cache, handles)
+	db, err := rawdb.NewLevelDBDatabase(ctx.config.ResolvePath(name), cache, handles, namespace)
 	if err != nil {
 		return nil, err
 	}

@@ -27,15 +27,15 @@ import (
 	"github.com/truechain/truechain-engineering-code/common"
 	"github.com/truechain/truechain-engineering-code/common/hexutil"
 	"github.com/truechain/truechain-engineering-code/common/math"
-	"github.com/truechain/truechain-engineering-code/crypto"
-	"github.com/truechain/truechain-engineering-code/log"
-	"github.com/truechain/truechain-engineering-code/rlp"
 	"github.com/truechain/truechain-engineering-code/core/rawdb"
 	snaildb "github.com/truechain/truechain-engineering-code/core/snailchain/rawdb"
 	"github.com/truechain/truechain-engineering-code/core/state"
 	"github.com/truechain/truechain-engineering-code/core/types"
+	"github.com/truechain/truechain-engineering-code/crypto"
 	"github.com/truechain/truechain-engineering-code/etruedb"
+	"github.com/truechain/truechain-engineering-code/log"
 	"github.com/truechain/truechain-engineering-code/params"
+	"github.com/truechain/truechain-engineering-code/rlp"
 )
 
 //go:generate gencodec -type Genesis -field-override genesisSpecMarshaling -out gen_genesis.go
@@ -246,7 +246,7 @@ func (g *Genesis) CommitFast(db etruedb.Database) (*types.Block, error) {
 // to the given database (or discards it if nil).
 func (g *Genesis) ToFastBlock(db etruedb.Database) *types.Block {
 	if db == nil {
-		db = etruedb.NewMemDatabase()
+		db = rawdb.NewMemoryDatabase()
 	}
 	statedb, _ := state.New(common.Hash{}, state.NewDatabase(db))
 	for addr, account := range g.Alloc {
@@ -345,7 +345,7 @@ func setupSnailGenesisBlock(db etruedb.Database, genesis *Genesis) (*params.Chai
 // to the given database (or discards it if nil).
 func (g *Genesis) ToSnailBlock(db etruedb.Database) *types.SnailBlock {
 	if db == nil {
-		db = etruedb.NewMemDatabase()
+		db = rawdb.NewMemoryDatabase()
 	}
 
 	head := &types.SnailHeader{

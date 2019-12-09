@@ -4,9 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"github.com/truechain/truechain-engineering-code/common"
-	"github.com/truechain/truechain-engineering-code/crypto"
 	"github.com/truechain/truechain-engineering-code/core"
 	"github.com/truechain/truechain-engineering-code/core/types"
+	"github.com/truechain/truechain-engineering-code/crypto"
 	dtypes "github.com/truechain/truechain-engineering-code/etrue/types"
 	"github.com/truechain/truechain-engineering-code/etruedb"
 	"github.com/truechain/truechain-engineering-code/event"
@@ -47,7 +47,7 @@ var (
 )
 
 // newTester creates a new downloader test mocker.
-func NewTester(testdb *etruedb.MemDatabase,stateDb etruedb.Database) *DownloadTester {
+func NewTester(testdb etruedb.Database, stateDb etruedb.Database) *DownloadTester {
 
 	genesis := core.GenesisFastBlockForTesting(testdb, testAddress, big.NewInt(1000000000))
 

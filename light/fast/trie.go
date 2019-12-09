@@ -22,9 +22,9 @@ import (
 	"fmt"
 
 	"github.com/truechain/truechain-engineering-code/common"
-	"github.com/truechain/truechain-engineering-code/crypto"
 	"github.com/truechain/truechain-engineering-code/core/state"
 	"github.com/truechain/truechain-engineering-code/core/types"
+	"github.com/truechain/truechain-engineering-code/crypto"
 	"github.com/truechain/truechain-engineering-code/etruedb"
 	"github.com/truechain/truechain-engineering-code/trie"
 )
@@ -141,7 +141,7 @@ func (t *odrTrie) GetKey(sha []byte) []byte {
 	return nil
 }
 
-func (t *odrTrie) Prove(key []byte, fromLevel uint, proofDb etruedb.Putter) error {
+func (t *odrTrie) Prove(key []byte, fromLevel uint, proofDb etruedb.Writer) error {
 	return errors.New("not implemented, needs client/server interface split")
 }
 

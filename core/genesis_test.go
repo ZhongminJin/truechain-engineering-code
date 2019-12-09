@@ -136,7 +136,7 @@ func TestSetupGenesis(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		db := etruedb.NewMemDatabase()
+		db := rawdb.NewMemoryDatabase()
 		config, hash, _, err := test.fn(db)
 		config.TIP5 = nil
 		// Check the return values.
@@ -263,7 +263,7 @@ func TestSetupSnailGenesis(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		db := etruedb.NewMemDatabase()
+		db := rawdb.NewMemoryDatabase()
 		config, _, hash, err := test.fn(db)
 		// Check the return values.
 		if !reflect.DeepEqual(err, test.wantErr) {

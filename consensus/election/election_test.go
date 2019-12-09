@@ -17,8 +17,9 @@
 package election
 
 import (
-	"math/big"
 	"bytes"
+	"github.com/truechain/truechain-engineering-code/core/rawdb"
+	"math/big"
 	"testing"
 
 	"github.com/truechain/truechain-engineering-code/common"
@@ -36,7 +37,7 @@ var (
 )
 
 func makeTestBlock() *types.Block {
-	db := etruedb.NewMemDatabase()
+	db := rawdb.NewMemoryDatabase()
 	BaseGenesis := new(core.Genesis)
 	genesis := BaseGenesis.MustFastCommit(db)
 	header := &types.Header{
@@ -103,7 +104,7 @@ func committeeEqual(left, right []*types.CommitteeMember) bool {
 
 func makeChain(n int) (*snailchain.SnailBlockChain, *core.BlockChain) {
 	var (
-	// 	testdb  = etruedb.NewMemDatabase()
+		// 	testdb  = rawdb.NewMemoryDatabase()
 		genesis = core.DefaultGenesisBlock()
 	// 	engine  = minerva.NewFaker()
 	)

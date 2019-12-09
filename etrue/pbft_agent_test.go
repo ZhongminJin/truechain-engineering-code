@@ -2,16 +2,16 @@ package etrue
 
 import (
 	"fmt"
+	"github.com/truechain/truechain-engineering-code/core/snailchain/rawdb"
 	"github.com/truechain/truechain-engineering-code/core/types"
 	"time"
 
 	"bytes"
 	"crypto/ecdsa"
 	"github.com/truechain/truechain-engineering-code/common"
+	"github.com/truechain/truechain-engineering-code/core"
 	"github.com/truechain/truechain-engineering-code/crypto"
 	"github.com/truechain/truechain-engineering-code/log"
-	"github.com/truechain/truechain-engineering-code/core"
-	"github.com/truechain/truechain-engineering-code/etruedb"
 	"github.com/truechain/truechain-engineering-code/params"
 	"testing"
 )
@@ -133,7 +133,7 @@ func validateSign(fb *types.Block, prikey *ecdsa.PrivateKey) bool {
 }
 
 func generateFastBlock() *types.Block {
-	db := etruedb.NewMemDatabase()
+	db := rawdb.NewMemoryDatabase()
 	BaseGenesis := new(core.Genesis)
 	genesis := BaseGenesis.MustFastCommit(db)
 	header := &types.Header{

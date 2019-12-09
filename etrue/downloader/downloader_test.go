@@ -19,6 +19,7 @@ package downloader
 import (
 	"errors"
 	"fmt"
+	"github.com/truechain/truechain-engineering-code/core/rawdb"
 	"math/big"
 	"sync"
 	"sync/atomic"
@@ -30,10 +31,10 @@ import (
 	"github.com/truechain/truechain-engineering-code/etrue/fastdownloader"
 
 	"github.com/truechain/truechain-engineering-code/common"
-	"github.com/truechain/truechain-engineering-code/crypto"
 	"github.com/truechain/truechain-engineering-code/consensus/minerva"
 	"github.com/truechain/truechain-engineering-code/core"
 	"github.com/truechain/truechain-engineering-code/core/types"
+	"github.com/truechain/truechain-engineering-code/crypto"
 	dtypes "github.com/truechain/truechain-engineering-code/etrue/types"
 	"github.com/truechain/truechain-engineering-code/etruedb"
 	"github.com/truechain/truechain-engineering-code/event"
@@ -82,7 +83,7 @@ type downloadTester struct {
 
 // newTester creates a new downloader test mocker.
 func newTester() *downloadTester {
-	testdb := etruedb.NewMemDatabase()
+	testdb := rawdb.NewMemoryDatabase()
 	genesis := core.GenesisSnailBlockForTesting(testdb, testAddress, big.NewInt(1000000000))
 
 	tester := &downloadTester{
@@ -99,7 +100,7 @@ func newTester() *downloadTester {
 		peerMissingStates: make(map[string]map[common.Hash]bool),
 	}
 
-	tester.stateDb = etruedb.NewMemDatabase()
+	tester.stateDb = rawdb.NewMemoryDatabase()
 	tester.ftester = fastdownloader.NewTester(testdb, tester.stateDb)
 
 	tester.downloader = New(FullSync, 0, tester.stateDb, new(event.TypeMux), tester, nil, tester.dropPeer, tester.ftester.GetDownloader())

@@ -23,6 +23,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/rand"
 	ethash "github.com/truechain/truechain-engineering-code/consensus/minerva"
+	"github.com/truechain/truechain-engineering-code/core/rawdb"
 
 	"github.com/truechain/truechain-engineering-code/core/snailchain"
 	"github.com/truechain/truechain-engineering-code/p2p/enode"
@@ -32,10 +33,10 @@ import (
 	"testing"
 
 	"github.com/truechain/truechain-engineering-code/common"
-	"github.com/truechain/truechain-engineering-code/crypto"
 	"github.com/truechain/truechain-engineering-code/core"
 	"github.com/truechain/truechain-engineering-code/core/types"
 	"github.com/truechain/truechain-engineering-code/core/vm"
+	"github.com/truechain/truechain-engineering-code/crypto"
 	"github.com/truechain/truechain-engineering-code/etrue/downloader"
 	"github.com/truechain/truechain-engineering-code/etruedb"
 	"github.com/truechain/truechain-engineering-code/event"
@@ -52,10 +53,10 @@ var (
 // newTestProtocolManager creates a new protocol manager for testing purposes,
 // with the given number of blocks already known, and potential notification
 // channels for different events.
-func newTestProtocolManager(mode downloader.SyncMode, blocks int, sBlocks int, generator func(int, *core.BlockGen), snailGenerator func(int, *snailchain.BlockGen), newtx chan<- []*types.Transaction, newft chan<- []*types.SnailBlock) (*ProtocolManager, *etruedb.MemDatabase, error) {
+func newTestProtocolManager(mode downloader.SyncMode, blocks int, sBlocks int, generator func(int, *core.BlockGen), snailGenerator func(int, *snailchain.BlockGen), newtx chan<- []*types.Transaction, newft chan<- []*types.SnailBlock) (*ProtocolManager, etruedb.Database, error) {
 	var (
 		evmux = new(event.TypeMux)
-		db    = etruedb.NewMemDatabase()
+		db    = rawdb.NewMemoryDatabase()
 		gspec = &core.Genesis{
 			Config:     params.TestChainConfig,
 			Alloc:      types.GenesisAlloc{testBank: {Balance: big.NewInt(1000000000)}},
@@ -107,7 +108,7 @@ func newTestProtocolManager(mode downloader.SyncMode, blocks int, sBlocks int, g
 // with the given number of blocks already known, and potential notification
 // channels for different events. In case of an error, the constructor force-
 // fails the test.
-func newTestProtocolManagerMust(t *testing.T, mode downloader.SyncMode, blocks int, sBlocks int, generator func(int, *core.BlockGen), snailGenerator func(int, *snailchain.BlockGen), newtx chan<- []*types.Transaction, newft chan<- []*types.SnailBlock) (*ProtocolManager, *etruedb.MemDatabase) {
+func newTestProtocolManagerMust(t *testing.T, mode downloader.SyncMode, blocks int, sBlocks int, generator func(int, *core.BlockGen), snailGenerator func(int, *snailchain.BlockGen), newtx chan<- []*types.Transaction, newft chan<- []*types.SnailBlock) (*ProtocolManager, etruedb.Database) {
 	pm, db, err := newTestProtocolManager(mode, blocks, sBlocks, generator, snailGenerator, newtx, newft)
 	if err != nil {
 		t.Fatalf("Failed to create protocol manager: %v", err)

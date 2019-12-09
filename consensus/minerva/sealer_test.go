@@ -31,7 +31,7 @@ func TestUpdateLookup(t *testing.T) {
 	/*
 
 		var (
-			testdb    = etruedb.NewMemDatabase()
+			testdb    = rawdb.NewMemoryDatabase()
 			//gspec     = &Genesis{Config: params.TestChainConfig}
 			//genesis   = gspec.MustFastCommit(testdb)
 			//blocks, _ = GenerateChain(params.TestChainConfig, genesis, ethash.NewFaker(), testdb, 8, nil)

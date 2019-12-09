@@ -17,15 +17,15 @@
 package runtime
 
 import (
+	"github.com/truechain/truechain-engineering-code/core/rawdb"
 	"math/big"
 	"strings"
 	"testing"
 
-	"github.com/truechain/truechain-engineering-code/common"
 	"github.com/truechain/truechain-engineering-code/accounts/abi"
+	"github.com/truechain/truechain-engineering-code/common"
 	"github.com/truechain/truechain-engineering-code/core/state"
 	"github.com/truechain/truechain-engineering-code/core/vm"
-	"github.com/truechain/truechain-engineering-code/etruedb"
 )
 
 func TestDefaults(t *testing.T) {
@@ -94,7 +94,7 @@ func TestExecute(t *testing.T) {
 }
 
 func TestCall(t *testing.T) {
-	state, _ := state.New(common.Hash{}, state.NewDatabase(etruedb.NewMemDatabase()))
+	state, _ := state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()))
 	address := common.HexToAddress("0x0a")
 	state.SetCode(address, []byte{
 		byte(vm.PUSH1), 10,

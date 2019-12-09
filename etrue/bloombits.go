@@ -105,7 +105,7 @@ func NewBloomIndexer(db etruedb.Database, size, confirms uint64) *core.ChainInde
 		db:   db,
 		size: size,
 	}
-	table := etruedb.NewTable(db, string(rawdb.BloomBitsIndexPrefix))
+	table := rawdb.NewTable(db, string(rawdb.BloomBitsIndexPrefix))
 
 	return core.NewChainIndexer(db, table, backend, size, confirms, bloomThrottling, "bloombits")
 }

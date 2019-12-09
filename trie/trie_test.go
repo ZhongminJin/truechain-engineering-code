@@ -21,6 +21,9 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/truechain/truechain-engineering-code/core/rawdb"
+	"github.com/truechain/truechain-engineering-code/etruedb/leveldb"
+	"github.com/truechain/truechain-engineering-code/etruedb/memorydb"
 	"io/ioutil"
 	"math/big"
 	"math/rand"
@@ -32,8 +35,8 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/truechain/truechain-engineering-code/common"
 	"github.com/truechain/truechain-engineering-code/crypto"
-	"github.com/truechain/truechain-engineering-code/rlp"
 	"github.com/truechain/truechain-engineering-code/etruedb"
+	"github.com/truechain/truechain-engineering-code/rlp"
 )
 
 func init() {
@@ -43,7 +46,7 @@ func init() {
 
 // Used for testing
 func newEmpty() *Trie {
-	trie, _ := New(common.Hash{}, NewDatabase(etruedb.NewMemDatabase()))
+	trie, _ := New(common.Hash{}, NewDatabase(memorydb.New()))
 	return trie
 }
 
@@ -67,7 +70,7 @@ func TestNull(t *testing.T) {
 }
 
 func TestMissingRoot(t *testing.T) {
-	trie, err := New(common.HexToHash("0beec7b5ea3f0fdbc95d0dd47f3c5bc275da8a33"), NewDatabase(etruedb.NewMemDatabase()))
+	trie, err := New(common.HexToHash("0beec7b5ea3f0fdbc95d0dd47f3c5bc275da8a33"), NewDatabase(memorydb.New()))
 	if trie != nil {
 		t.Error("New returned non-nil trie for invalid root")
 	}
@@ -80,7 +83,7 @@ func TestMissingNodeDisk(t *testing.T)    { testMissingNode(t, false) }
 func TestMissingNodeMemonly(t *testing.T) { testMissingNode(t, true) }
 
 func testMissingNode(t *testing.T, memonly bool) {
-	diskdb := etruedb.NewMemDatabase()
+	diskdb := memorydb.New()
 	triedb := NewDatabase(diskdb)
 
 	trie, _ := New(common.Hash{}, triedb)
@@ -317,13 +320,13 @@ func TestLargeValue(t *testing.T) {
 }
 
 type countingDB struct {
-	etruedb.Database
+	etruedb.KeyValueStore
 	gets map[string]int
 }
 
 func (db *countingDB) Get(key []byte) ([]byte, error) {
 	db.gets[string(key)]++
-	return db.Database.Get(key)
+	return db.KeyValueStore.Get(key)
 }
 
 // TestCacheUnload checks that decoded nodes are unloaded after a
@@ -342,15 +345,16 @@ func TestCacheUnload(t *testing.T) {
 	// Commit the trie repeatedly and access key1.
 	// The branch containing it is loaded from DB exactly two times:
 	// in the 0th and 6th iteration.
-	db := &countingDB{Database: trie.db.diskdb, gets: make(map[string]int)}
-	trie, _ = New(root, NewDatabase(db))
+	diskdb := &countingDB{KeyValueStore: trie.db.diskdb, gets: make(map[string]int)}
+	triedb := NewDatabase(diskdb)
+	trie, _ = New(root, triedb)
 	trie.SetCacheLimit(5)
 	for i := 0; i < 12; i++ {
 		getString(trie, key1)
 		trie.Commit(nil)
 	}
 	// Check that it got loaded two times.
-	for dbkey, count := range db.gets {
+	for dbkey, count := range diskdb.gets {
 		if count != 2 {
 			t.Errorf("db key %x loaded %d times, want %d times", []byte(dbkey), count, 2)
 		}
@@ -411,7 +415,7 @@ func (randTest) Generate(r *rand.Rand, size int) reflect.Value {
 }
 
 func runRandTest(rt randTest) bool {
-	triedb := NewDatabase(etruedb.NewMemDatabase())
+	triedb := NewDatabase(memorydb.New())
 
 	tr, _ := New(common.Hash{}, triedb)
 	values := make(map[string]string) // tracks content of the trie
@@ -539,7 +543,7 @@ func benchGet(b *testing.B, commit bool) {
 	b.StopTimer()
 
 	if commit {
-		ldb := trie.db.diskdb.(*etruedb.LDBDatabase)
+		ldb := trie.db.diskdb.(*leveldb.LevelDBDatabase)
 		ldb.Close()
 		os.RemoveAll(ldb.Path())
 	}
@@ -595,7 +599,7 @@ func tempDB() (string, *Database) {
 	if err != nil {
 		panic(fmt.Sprintf("can't create temporary directory: %v", err))
 	}
-	diskdb, err := etruedb.NewLDBDatabase(dir, 256, 0)
+	diskdb, err := leveldb.New(dir, 256, 0, "")
 	if err != nil {
 		panic(fmt.Sprintf("can't create temporary database: %v", err))
 	}

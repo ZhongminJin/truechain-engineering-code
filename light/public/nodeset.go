@@ -22,8 +22,8 @@ import (
 
 	"github.com/truechain/truechain-engineering-code/common"
 	"github.com/truechain/truechain-engineering-code/crypto"
-	"github.com/truechain/truechain-engineering-code/rlp"
 	"github.com/truechain/truechain-engineering-code/etruedb"
+	"github.com/truechain/truechain-engineering-code/rlp"
 )
 
 // NodeSet stores a set of trie nodes. It implements trie.Database and can also
@@ -115,7 +115,7 @@ func (db *NodeSet) NodeList() NodeList {
 }
 
 // Store writes the contents of the set to the given database
-func (db *NodeSet) Store(target etruedb.Putter) {
+func (db *NodeSet) Store(target etruedb.Writer) {
 	db.lock.RLock()
 	defer db.lock.RUnlock()
 
@@ -124,11 +124,11 @@ func (db *NodeSet) Store(target etruedb.Putter) {
 	}
 }
 
-// NodeList stores an ordered list of trie nodes. It implements etruedb.Putter.
+// NodeList stores an ordered list of trie nodes. It implements etruedb.Writer.
 type NodeList []rlp.RawValue
 
 // Store writes the contents of the list to the given database
-func (n NodeList) Store(db etruedb.Putter) {
+func (n NodeList) Store(db etruedb.Writer) {
 	for _, node := range n {
 		db.Put(crypto.Keccak256(node), node)
 	}

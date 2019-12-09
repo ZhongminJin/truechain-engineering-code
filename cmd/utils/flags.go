@@ -1346,7 +1346,7 @@ func MakeChainDatabase(ctx *cli.Context, stack *node.Node) etruedb.Database {
 	/*if ctx.GlobalBool(LightModeFlag.Name) {
 		name = "lightchaindata"
 	}*/
-	chainDb, err := stack.OpenDatabase(name, cache, handles)
+	chainDb, err := stack.OpenDatabase(name, cache, handles, "")
 	if err != nil {
 		Fatalf("Could not open database: %v", err)
 	}

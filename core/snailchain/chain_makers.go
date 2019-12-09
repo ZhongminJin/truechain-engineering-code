@@ -17,6 +17,7 @@
 package snailchain
 
 import (
+	"github.com/truechain/truechain-engineering-code/core/rawdb"
 	"github.com/truechain/truechain-engineering-code/log"
 	"math/big"
 
@@ -294,7 +295,7 @@ func (cr *fakeChainReader) GetBlock(hash common.Hash, number uint64) *types.Snai
 //MakeChain return snailChain and fastchain by given fastBlockNumbers and snailBlockNumbers
 func MakeChain(fastBlockNumbers int, snailBlockNumbers int, genesis *core.Genesis, engine consensus.Engine) (*SnailBlockChain, *core.BlockChain) {
 	var (
-		testdb = etruedb.NewMemDatabase()
+		testdb = rawdb.NewMemoryDatabase()
 	)
 	cache := &core.CacheConfig{
 		//TrieNodeLimit: etrue.DefaultConfig.TrieCache,
