@@ -1292,9 +1292,9 @@ func (bc *BlockChain) insertChain(chain types.Blocks, verifySeals bool) (int, []
 
 		parent := it.previous()
 		if parent == nil {
-			parent = bc.GetBlock(block.ParentHash(), block.NumberU64()-1)
+			parent = bc.GetHeader(block.ParentHash(), block.NumberU64()-1)
 		}
-		state, err := state.New(parent.Root(), bc.stateCache)
+		state, err := state.New(parent.Root, bc.stateCache)
 		if err != nil {
 			return it.index, events, coalescedLogs, err
 		}
@@ -1307,7 +1307,7 @@ func (bc *BlockChain) insertChain(chain types.Blocks, verifySeals bool) (int, []
 			return it.index, events, coalescedLogs, err
 		}
 		// Validate the state using the default validator
-		if err := bc.Validator().ValidateState(block, parent, state, receipts, usedGas); err != nil {
+		if err := bc.Validator().ValidateState(block, state, receipts, usedGas); err != nil {
 			bc.reportBlock(block, receipts, err)
 			return it.index, events, coalescedLogs, err
 		}
@@ -1425,7 +1425,7 @@ func (bc *BlockChain) insertSidechain(it *insertIterator) (int, []interface{}, [
 		hashes  []common.Hash
 		numbers []uint64
 	)
-	parent := bc.GetHeader(it.previous().Hash(), it.previous().NumberU64())
+	parent := it.previous()
 	for parent != nil && !bc.HasState(parent.Root) {
 		hashes = append(hashes, parent.Hash())
 		numbers = append(numbers, parent.Number.Uint64())

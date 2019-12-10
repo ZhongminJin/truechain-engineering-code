@@ -29,10 +29,6 @@ import (
 
 	"fmt"
 	"github.com/truechain/truechain-engineering-code/common"
-	"github.com/truechain/truechain-engineering-code/crypto"
-	"github.com/truechain/truechain-engineering-code/crypto/ecies"
-	"github.com/truechain/truechain-engineering-code/log"
-	"github.com/truechain/truechain-engineering-code/rlp"
 	"github.com/truechain/truechain-engineering-code/consensus"
 	elect "github.com/truechain/truechain-engineering-code/consensus/election"
 	"github.com/truechain/truechain-engineering-code/core"
@@ -40,9 +36,13 @@ import (
 	"github.com/truechain/truechain-engineering-code/core/state"
 	"github.com/truechain/truechain-engineering-code/core/types"
 	"github.com/truechain/truechain-engineering-code/core/vm"
+	"github.com/truechain/truechain-engineering-code/crypto"
+	"github.com/truechain/truechain-engineering-code/crypto/ecies"
 	"github.com/truechain/truechain-engineering-code/event"
+	"github.com/truechain/truechain-engineering-code/log"
 	"github.com/truechain/truechain-engineering-code/metrics"
 	"github.com/truechain/truechain-engineering-code/params"
+	"github.com/truechain/truechain-engineering-code/rlp"
 )
 
 const (
@@ -904,13 +904,8 @@ func (agent *PbftAgent) VerifyFastBlock(fb *types.Block, result bool) (*types.Pb
 		return voteSign, core.ErrIsFallback
 	}
 	var (
-		bc     = agent.fastChain
-		parent = bc.GetBlock(fb.ParentHash(), fb.NumberU64()-1)
+		bc = agent.fastChain
 	)
-	if parent == nil { //if cannot find parent return ErrUnSyncParentBlock
-		log.Warn("VerifyFastBlock ErrHeightNotYet error", "header", fb.Number())
-		return nil, types.ErrHeightNotYet
-	}
 	err := agent.engine.VerifyHeader(bc, fb.Header())
 	if err != nil {
 		log.Error("verifyFastBlock verifyHeader error", "header", fb.Number(), "err", err)
@@ -960,7 +955,7 @@ func (agent *PbftAgent) VerifyFastBlock(fb *types.Block, result bool) (*types.Pb
 		voteSign, _ := agent.GenerateSignWithVote(fb, types.VoteAgreeAgainst, result)
 		return voteSign, err
 	}
-	err = bc.Validator().ValidateState(fb, parent, state, receipts, usedGas)
+	err = bc.Validator().ValidateState(fb, state, receipts, usedGas)
 	if err != nil {
 		log.Error("verifyFastBlock validateState error", "Height:", fb.Number(), "err", err)
 		voteSign, _ := agent.GenerateSignWithVote(fb, types.VoteAgreeAgainst, result)

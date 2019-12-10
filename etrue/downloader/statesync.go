@@ -24,10 +24,10 @@ import (
 	"time"
 
 	"github.com/truechain/truechain-engineering-code/common"
-	"github.com/truechain/truechain-engineering-code/log"
 	"github.com/truechain/truechain-engineering-code/core/rawdb"
 	"github.com/truechain/truechain-engineering-code/core/state"
 	"github.com/truechain/truechain-engineering-code/etruedb"
+	"github.com/truechain/truechain-engineering-code/log"
 	"github.com/truechain/truechain-engineering-code/trie"
 	"golang.org/x/crypto/sha3"
 
@@ -328,7 +328,13 @@ func (s *stateSync) loop() (err error) {
 				// 2 items are the minimum requested, if even that times out, we've no use of
 				// this peer at the moment.
 				log.Warn("Stalling state sync, dropping peer", "peer", req.peer.GetID())
-				s.d.dropPeer(req.peer.GetID(), types.SDownloaderLoopCall)
+				if s.d.dropPeer == nil {
+					// The dropPeer method is nil when `--copydb` is used for a local copy.
+					// Timeouts can occur if e.g. compaction hits at the wrong time, and can be ignored
+					req.peer.GetLog().Warn("Downloader wants to drop peer, but peerdrop-function is not set", "peer", req.peer.GetID())
+				} else {
+					s.d.dropPeer(req.peer.GetID(), types.SDownloaderLoopCall)
+				}
 			}
 			// Process all the received blobs and check for stale delivery
 			delivered, err := s.process(req)

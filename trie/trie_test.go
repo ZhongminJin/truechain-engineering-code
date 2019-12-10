@@ -21,7 +21,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/truechain/truechain-engineering-code/core/rawdb"
 	"github.com/truechain/truechain-engineering-code/etruedb/leveldb"
 	"github.com/truechain/truechain-engineering-code/etruedb/memorydb"
 	"io/ioutil"
@@ -543,7 +542,7 @@ func benchGet(b *testing.B, commit bool) {
 	b.StopTimer()
 
 	if commit {
-		ldb := trie.db.diskdb.(*leveldb.LevelDBDatabase)
+		ldb := trie.db.diskdb.(*leveldb.Database)
 		ldb.Close()
 		os.RemoveAll(ldb.Path())
 	}
