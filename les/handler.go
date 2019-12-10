@@ -84,7 +84,7 @@ type FastBlockChain interface {
 	GetHeader(hash common.Hash, number uint64) *types.Header
 	GetHeaderByHash(hash common.Hash) *types.Header
 	CurrentHeader() *types.Header
-	State() (*state.StateDB, error)
+	StateCache() state.Database
 	InsertHeaderChain(chain []*types.Header, checkFreq int) (int, error)
 	Rollback(chain []common.Hash)
 	GetHeaderByNumber(number uint64) *types.Header
@@ -1050,15 +1050,15 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 						atomic.AddUint32(&p.invalidCount, 1)
 						continue
 					}
-					statedb, err := pm.fblockchain.State()
+					triedb := pm.fblockchain.StateCache().TrieDB()
 
-					account, err := pm.getAccount(statedb, header.Root, common.BytesToHash(request.AccKey))
+					account, err := pm.getAccount(triedb, header.Root, common.BytesToHash(request.AccKey))
 					if err != nil {
 						p.Log().Warn("Failed to retrieve account for code", "block", header.Number, "hash", header.Hash(), "account", common.BytesToHash(request.AccKey), "err", err)
 						atomic.AddUint32(&p.invalidCount, 1)
 						continue
 					}
-					code, err := statedb.Database().TrieDB().Node(common.BytesToHash(account.CodeHash))
+					code, err := triedb.Node(common.BytesToHash(account.CodeHash))
 					if err != nil {
 						p.Log().Warn("Failed to retrieve account code", "block", header.Number, "hash", header.Hash(), "account", common.BytesToHash(request.AccKey), "codehash", common.BytesToHash(account.CodeHash), "err", err)
 						continue
@@ -1225,25 +1225,25 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 						continue
 					}
 					// Open the account or storage trie for the request
-					statedb, _ := pm.fblockchain.State()
+					statedb := pm.fblockchain.StateCache()
 
 					switch len(request.AccKey) {
 					case 0:
 						// No account key specified, open an account trie
-						trie, err = statedb.Database().OpenTrie(root)
+						trie, err = statedb.OpenTrie(root)
 						if trie == nil || err != nil {
 							p.Log().Warn("Failed to open storage trie for proof", "block", header.Number, "hash", header.Hash(), "root", root, "err", err)
 							continue
 						}
 					default:
 						// Account key specified, open a storage trie
-						account, err := pm.getAccount(statedb, root, common.BytesToHash(request.AccKey))
+						account, err := pm.getAccount(statedb.TrieDB(), root, common.BytesToHash(request.AccKey))
 						if err != nil {
 							p.Log().Warn("Failed to retrieve account for proof", "block", header.Number, "hash", header.Hash(), "account", common.BytesToHash(request.AccKey), "err", err)
 							atomic.AddUint32(&p.invalidCount, 1)
 							continue
 						}
-						trie, err = statedb.Database().OpenStorageTrie(common.BytesToHash(request.AccKey), account.Root)
+						trie, err = statedb.OpenStorageTrie(common.BytesToHash(request.AccKey), account.Root)
 						if trie == nil || err != nil {
 							p.Log().Warn("Failed to open storage trie for proof", "block", header.Number, "hash", header.Hash(), "account", common.BytesToHash(request.AccKey), "root", account.Root, "err", err)
 							continue
@@ -1513,8 +1513,8 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 }
 
 // getAccount retrieves an account from the state based at root.
-func (pm *ProtocolManager) getAccount(statedb *state.StateDB, root, hash common.Hash) (state.Account, error) {
-	trie, err := trie.New(root, statedb.Database().TrieDB())
+func (pm *ProtocolManager) getAccount(statedb *trie.Database, root, hash common.Hash) (state.Account, error) {
+	trie, err := trie.New(root, statedb)
 	if err != nil {
 		return state.Account{}, err
 	}

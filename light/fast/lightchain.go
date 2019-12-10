@@ -26,10 +26,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/truechain/truechain-engineering-code/common"
-	"github.com/truechain/truechain-engineering-code/log"
-	"github.com/truechain/truechain-engineering-code/rlp"
 	"github.com/hashicorp/golang-lru"
+	"github.com/truechain/truechain-engineering-code/common"
 	"github.com/truechain/truechain-engineering-code/consensus"
 	"github.com/truechain/truechain-engineering-code/core"
 	"github.com/truechain/truechain-engineering-code/core/rawdb"
@@ -37,7 +35,9 @@ import (
 	"github.com/truechain/truechain-engineering-code/core/types"
 	"github.com/truechain/truechain-engineering-code/etruedb"
 	"github.com/truechain/truechain-engineering-code/event"
+	"github.com/truechain/truechain-engineering-code/log"
 	"github.com/truechain/truechain-engineering-code/params"
+	"github.com/truechain/truechain-engineering-code/rlp"
 )
 
 var (
@@ -206,9 +206,8 @@ func (lc *LightChain) Genesis() *types.Block {
 	return lc.genesisBlock
 }
 
-// State returns a new mutable state based on the current HEAD block.
-func (lc *LightChain) State() (*state.StateDB, error) {
-	return nil, errors.New("not implemented, needs client/server interface split")
+func (lc *LightChain) StateCache() state.Database {
+	panic("not implemented")
 }
 
 // GetBody retrieves a block body (transactions and uncles) from the database

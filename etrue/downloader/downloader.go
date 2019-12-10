@@ -27,14 +27,14 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/truechain/truechain-engineering-code/common"
-	"github.com/truechain/truechain-engineering-code/log"
 	"github.com/truechain/truechain-engineering-code"
+	"github.com/truechain/truechain-engineering-code/common"
 	"github.com/truechain/truechain-engineering-code/core/types"
 	"github.com/truechain/truechain-engineering-code/etrue/fastdownloader"
 	etrue "github.com/truechain/truechain-engineering-code/etrue/types"
 	"github.com/truechain/truechain-engineering-code/etruedb"
 	"github.com/truechain/truechain-engineering-code/event"
+	"github.com/truechain/truechain-engineering-code/log"
 	"github.com/truechain/truechain-engineering-code/metrics"
 	//"github.com/truechain/truechain-engineering-code/trie"
 )
@@ -99,25 +99,25 @@ var (
 )
 
 type Downloader struct {
-	mode SyncMode // Synchronisation mode defining the strategy used (per sync cycle)
+	mode SyncMode       // Synchronisation mode defining the strategy used (per sync cycle)
 	mux  *event.TypeMux // Event multiplexer to announce sync operation events
 
 	checkpoint uint64         // Checkpoint block number to enforce head against (e.g. fast sync
 	genesis    uint64         // Genesis block number to limit sync to (e.g. light client CHT)
 	queue      *queue         // Scheduler for selecting the hashes to download
 	peers      *etrue.PeerSet // Set of active peers from which download can proceed
-	
-	stateDB    etruedb.Database
+
+	stateDB etruedb.Database
 	//stateBloom *trie.SyncBloom // Bloom filter for fast trie node existence checks
-	
+
 	rttEstimate   uint64 // Round trip time to target for download requests
 	rttConfidence uint64 // Confidence in the estimated RTT (unit: millionths to allow atomic ops)
 
 	// Statistics
-	syncStatsChainOrigin uint64 // Origin block number where syncing started at
-	syncStatsChainHeight uint64 // Highest block number known when syncing started
-	syncStatsLock  sync.RWMutex // Lock protecting the sync stats fields
-	syncStatsState stateSyncStats
+	syncStatsChainOrigin uint64       // Origin block number where syncing started at
+	syncStatsChainHeight uint64       // Highest block number known when syncing started
+	syncStatsLock        sync.RWMutex // Lock protecting the sync stats fields
+	syncStatsState       stateSyncStats
 
 	lightchain LightChain
 	blockchain BlockChain
@@ -670,30 +670,32 @@ func (d *Downloader) findAncestor(p etrue.PeerConnection, remoteHeader *types.Sn
 	}
 
 	p.GetLog().Debug("Looking for common ancestor", "local", localHeight, "remote", remoteHeight)
-	if localHeight >= MaxForkAncestry || d.mode == LightSync {
+
+	// Recap floor value for binary search
+	if localHeight >= MaxForkAncestry {
 		// We're above the max reorg threshold, find the earliest fork point
 		floor = int64(localHeight - MaxForkAncestry)
-
-		// If we're doing a light sync, ensure the floor doesn't go below the CHT, as
-		// all headers before that point will be missing.
-		if d.mode == LightSync {
-			// If we dont know the current CHT position, find it
-			if d.genesis == 0 {
-				header := d.lightchain.CurrentHeader()
-				for header != nil {
-					d.genesis = header.Number.Uint64()
-					if floor >= int64(d.genesis)-1 {
-						break
-					}
-					header = d.lightchain.GetHeaderByHash(header.ParentHash)
+	}
+	// If we're doing a light sync, ensure the floor doesn't go below the CHT, as
+	// all headers before that point will be missing.
+	if d.mode == LightSync {
+		// If we dont know the current CHT position, find it
+		if d.genesis == 0 {
+			header := d.lightchain.CurrentHeader()
+			for header != nil {
+				d.genesis = header.Number.Uint64()
+				if floor >= int64(d.genesis)-1 {
+					break
 				}
-			}
-			// We already know the "genesis" block number, cap floor to that
-			if floor < int64(d.genesis)-1 {
-				floor = int64(d.genesis) - 1
+				header = d.lightchain.GetHeaderByHash(header.ParentHash)
 			}
 		}
+		// We already know the "genesis" block number, cap floor to that
+		if floor < int64(d.genesis)-1 {
+			floor = int64(d.genesis) - 1
+		}
 	}
+
 	from, count, skip, max := calculateRequestSpan(remoteHeight, localHeight)
 
 	p.GetLog().Trace("Span searching for common ancestor", "count", count, "from", from, "skip", skip)
