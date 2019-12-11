@@ -36,7 +36,6 @@ import (
 	"github.com/truechain/truechain-engineering-code/internal/trueapi"
 	"github.com/truechain/truechain-engineering-code/log"
 	"github.com/truechain/truechain-engineering-code/miner"
-	"github.com/truechain/truechain-engineering-code/params"
 	"github.com/truechain/truechain-engineering-code/rlp"
 	"github.com/truechain/truechain-engineering-code/rpc"
 	"github.com/truechain/truechain-engineering-code/trie"
@@ -450,14 +449,13 @@ func (api *PublicDebugAPI) DumpBlock(blockNr rpc.BlockNumber) (state.Dump, error
 // PrivateDebugAPI is the collection of Truechain full node APIs exposed over
 // the private debugging endpoint.
 type PrivateDebugAPI struct {
-	config *params.ChainConfig
-	etrue  *Truechain
+	etrue *Truechain
 }
 
 // NewPrivateDebugAPI creates a new API definition for the full node-related
 // private debug methods of the Truechain service.
-func NewPrivateDebugAPI(config *params.ChainConfig, etrue *Truechain) *PrivateDebugAPI {
-	return &PrivateDebugAPI{config: config, etrue: etrue}
+func NewPrivateDebugAPI(etrue *Truechain) *PrivateDebugAPI {
+	return &PrivateDebugAPI{etrue: etrue}
 }
 
 // Preimage is a debug API function that returns the preimage for a sha3 hash, if known.

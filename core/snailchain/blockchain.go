@@ -269,7 +269,7 @@ func (bc *SnailBlockChain) SetHead(head uint64) error {
 		return err
 	}
 	// Rewind the header chain, deleting all block bodies and FtLookupEntry until then
-	delFn := func(db etruedb.Deleter, hash common.Hash, num uint64) {
+	delFn := func(db etruedb.Writer, hash common.Hash, num uint64) {
 		rawdb.DeleteBody(db, hash, num)
 		block := bc.GetBlockByNumber(num)
 		for _, ft := range block.Fruits() {

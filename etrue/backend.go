@@ -65,8 +65,7 @@ type LesServer interface {
 
 // Truechain implements the Truechain full node service.
 type Truechain struct {
-	config      *Config
-	chainConfig *params.ChainConfig
+	config *Config
 
 	// Channel for shutting down the service
 	shutdownChan chan bool // Channel for shutting down the Truechain
@@ -147,7 +146,6 @@ func New(ctx *node.ServiceContext, config *Config) (*Truechain, error) {
 	etrue := &Truechain{
 		config:         config,
 		chainDb:        chainDb,
-		chainConfig:    chainConfig,
 		eventMux:       ctx.EventMux,
 		accountManager: ctx.AccountManager,
 		engine:         CreateConsensusEngine(ctx, &config.MinervaHash, chainConfig, chainDb),
@@ -173,12 +171,12 @@ func New(ctx *node.ServiceContext, config *Config) (*Truechain, error) {
 		cacheConfig = &core.CacheConfig{Deleted: config.DeletedState, Disabled: config.NoPruning, TrieNodeLimit: config.TrieCache, TrieTimeLimit: config.TrieTimeout}
 	)
 
-	etrue.blockchain, err = core.NewBlockChain(chainDb, cacheConfig, etrue.chainConfig, etrue.engine, vmConfig)
+	etrue.blockchain, err = core.NewBlockChain(chainDb, cacheConfig, chainConfig, etrue.engine, vmConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	etrue.snailblockchain, err = chain.NewSnailBlockChain(chainDb, etrue.chainConfig, etrue.engine, etrue.blockchain)
+	etrue.snailblockchain, err = chain.NewSnailBlockChain(chainDb, chainConfig, etrue.engine, etrue.blockchain)
 	if err != nil {
 		return nil, err
 	}
@@ -210,7 +208,7 @@ func New(ctx *node.ServiceContext, config *Config) (*Truechain, error) {
 		config.SnailPool.Journal = ctx.ResolvePath(config.SnailPool.Journal)
 	}
 
-	etrue.txPool = core.NewTxPool(config.TxPool, etrue.chainConfig, etrue.blockchain)
+	etrue.txPool = core.NewTxPool(config.TxPool, chainConfig, etrue.blockchain)
 
 	//etrue.snailPool = chain.NewSnailPool(config.SnailPool, etrue.blockchain, etrue.snailblockchain, etrue.engine, sv)
 	etrue.snailPool = chain.NewSnailPool(config.SnailPool, etrue.blockchain, etrue.snailblockchain, etrue.engine)
@@ -224,16 +222,16 @@ func New(ctx *node.ServiceContext, config *Config) (*Truechain, error) {
 	etrue.election.SetEngine(etrue.engine)
 
 	//coinbase, _ := etrue.Etherbase()
-	etrue.agent = NewPbftAgent(etrue, etrue.chainConfig, etrue.engine, etrue.election, config.MinerGasFloor, config.MinerGasCeil)
+	etrue.agent = NewPbftAgent(etrue, chainConfig, etrue.engine, etrue.election, config.MinerGasFloor, config.MinerGasCeil)
 	if etrue.protocolManager, err = NewProtocolManager(
-		etrue.chainConfig, config.SyncMode, config.NetworkId,
+		chainConfig, config.SyncMode, config.NetworkId,
 		etrue.eventMux, etrue.txPool, etrue.snailPool, etrue.engine,
 		etrue.blockchain, etrue.snailblockchain,
 		chainDb, etrue.agent); err != nil {
 		return nil, err
 	}
 
-	etrue.miner = miner.New(etrue, etrue.chainConfig, etrue.EventMux(), etrue.engine, etrue.election, etrue.Config().MineFruit, etrue.Config().NodeType, etrue.Config().RemoteMine, etrue.Config().Mine)
+	etrue.miner = miner.New(etrue, chainConfig, etrue.EventMux(), etrue.engine, etrue.election, etrue.Config().MineFruit, etrue.Config().NodeType, etrue.Config().RemoteMine, etrue.Config().Mine)
 	etrue.miner.SetExtra(makeExtraData(config.ExtraData))
 
 	committeeKey, err := crypto.ToECDSA(etrue.config.CommitteeKey)
@@ -356,7 +354,7 @@ func (s *Truechain) APIs() []rpc.API {
 		}, {
 			Namespace: "debug",
 			Version:   "1.0",
-			Service:   NewPrivateDebugAPI(s.chainConfig, s),
+			Service:   NewPrivateDebugAPI(s),
 		}, {
 			Namespace: "net",
 			Version:   "1.0",

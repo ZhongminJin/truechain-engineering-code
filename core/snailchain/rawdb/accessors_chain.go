@@ -45,7 +45,7 @@ func WriteCanonicalHash(db etruedb.Writer, hash common.Hash, number uint64) {
 }
 
 // DeleteCanonicalHash removes the number to hash canonical mapping.
-func DeleteCanonicalHash(db etruedb.Deleter, number uint64) {
+func DeleteCanonicalHash(db etruedb.Writer, number uint64) {
 	if err := db.Delete(headerHashKey(number)); err != nil {
 		log.Crit("Failed to delete snail number to hash mapping", "err", err)
 	}
@@ -180,7 +180,7 @@ func WriteHeader(db etruedb.Writer, header *types.SnailHeader) {
 }
 
 // DeleteHeader removes all block header data associated with a hash.
-func DeleteHeader(db etruedb.Deleter, hash common.Hash, number uint64) {
+func DeleteHeader(db etruedb.Writer, hash common.Hash, number uint64) {
 	if err := db.Delete(headerKey(number, hash)); err != nil {
 		log.Crit("Failed to delete snail header", "err", err)
 	}
@@ -234,7 +234,7 @@ func WriteBody(db etruedb.Writer, hash common.Hash, number uint64, body *types.S
 }
 
 // DeleteBody removes all block body data associated with a hash.
-func DeleteBody(db etruedb.Deleter, hash common.Hash, number uint64) {
+func DeleteBody(db etruedb.Writer, hash common.Hash, number uint64) {
 	if err := db.Delete(blockBodyKey(number, hash)); err != nil {
 		log.Crit("Failed to delete snail block body", "err", err)
 	}
@@ -266,7 +266,7 @@ func WriteTd(db etruedb.Writer, hash common.Hash, number uint64, td *big.Int) {
 }
 
 // DeleteTd removes all block total difficulty data associated with a hash.
-func DeleteTd(db etruedb.Deleter, hash common.Hash, number uint64) {
+func DeleteTd(db etruedb.Writer, hash common.Hash, number uint64) {
 	if err := db.Delete(headerTDKey(number, hash)); err != nil {
 		log.Crit("Failed to delete block total difficulty", "err", err)
 	}
@@ -297,7 +297,7 @@ func WriteBlock(db etruedb.Writer, block *types.SnailBlock) {
 }
 
 // DeleteBlock removes all block data associated with a hash.
-func DeleteBlock(db etruedb.Deleter, hash common.Hash, number uint64) {
+func DeleteBlock(db etruedb.Writer, hash common.Hash, number uint64) {
 	DeleteHeader(db, hash, number)
 	DeleteBody(db, hash, number)
 	DeleteTd(db, hash, number)
@@ -402,7 +402,7 @@ func WriteFruitsHead(db etruedb.Writer, hash common.Hash, number uint64, heads [
 }
 
 // DeleteBody removes all block body data associated with a hash.
-func DeleteFruitsHead(db etruedb.Deleter, hash common.Hash, number uint64) {
+func DeleteFruitsHead(db etruedb.Writer, hash common.Hash, number uint64) {
 	if err := db.Delete(fruitHeadsKey(number, hash)); err != nil {
 		log.Crit("Failed to delete snail block body", "err", err)
 	}

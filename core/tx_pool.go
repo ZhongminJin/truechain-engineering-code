@@ -930,6 +930,9 @@ func (pool *TxPool) AddRemotesSync(txs []*types.Transaction) []error {
 
 // addTx enqueues a single transaction into the pool if it is valid.
 func (pool *TxPool) addTx(tx *types.Transaction, local bool) error {
+	// Cache sender in transaction before obtaining lock (pool.signer is immutable)
+	types.Sender(pool.signer, tx)
+
 	pool.mu.Lock()
 	defer pool.mu.Unlock()
 	// Try to inject the transaction and update any state
@@ -947,13 +950,16 @@ func (pool *TxPool) addTx(tx *types.Transaction, local bool) error {
 
 // addTxs attempts to queue a batch of transactions if they are valid.
 func (pool *TxPool) addTxs(txs []*types.Transaction, local bool, mark string) []error {
-
 	watch := help.NewTWatch(3, fmt.Sprintf("handleMsg addTxs newTxsCh: %d txs: %d", len(pool.newTxsCh), len(txs)))
 	defer func() {
 		watch.EndWatch()
 		watch.Finish(fmt.Sprintf("end   mark: %s", mark))
 	}()
 
+	// Cache senders in transactions before obtaining lock (pool.signer is immutable)
+	for _, tx := range txs {
+		types.Sender(pool.signer, tx)
+	}
 	pool.mu.Lock()
 	defer pool.mu.Unlock()
 

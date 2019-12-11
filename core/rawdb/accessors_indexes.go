@@ -61,7 +61,7 @@ func WriteTxLookupEntries(db etruedb.Writer, block *types.Block) {
 }
 
 // DeleteTxLookupEntry removes all transaction data associated with a hash.
-func DeleteTxLookupEntry(db etruedb.Deleter, hash common.Hash) {
+func DeleteTxLookupEntry(db etruedb.Writer, hash common.Hash) {
 	db.Delete(txLookupKey(hash))
 }
 

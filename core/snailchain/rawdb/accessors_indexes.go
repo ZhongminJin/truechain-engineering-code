@@ -59,7 +59,7 @@ func WriteFtLookupEntries(db etruedb.Writer, block *types.SnailBlock) {
 }
 
 // DeleteFtLookupEntry removes all fruit data associated with a hash.
-func DeleteFtLookupEntry(db etruedb.Deleter, fastHash common.Hash) {
+func DeleteFtLookupEntry(db etruedb.Writer, fastHash common.Hash) {
 	db.Delete(ftLookupKey(fastHash))
 }
 

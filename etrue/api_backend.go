@@ -20,9 +20,9 @@ import (
 	"context"
 	"math/big"
 
+	"github.com/truechain/truechain-engineering-code/accounts"
 	"github.com/truechain/truechain-engineering-code/common"
 	"github.com/truechain/truechain-engineering-code/common/math"
-	"github.com/truechain/truechain-engineering-code/accounts"
 	"github.com/truechain/truechain-engineering-code/core"
 	"github.com/truechain/truechain-engineering-code/core/bloombits"
 	"github.com/truechain/truechain-engineering-code/core/rawdb"
@@ -45,7 +45,7 @@ type TrueAPIBackend struct {
 
 // ChainConfig returns the active chain configuration.
 func (b *TrueAPIBackend) ChainConfig() *params.ChainConfig {
-	return b.etrue.chainConfig
+	return b.etrue.blockchain.Config()
 }
 
 // CurrentBlock return the fast chain current Block
@@ -201,7 +201,7 @@ func (b *TrueAPIBackend) GetEVM(ctx context.Context, msg core.Message, state *st
 	vmError := func() error { return nil }
 
 	context := core.NewEVMContext(msg, header, b.etrue.BlockChain(), nil, nil)
-	return vm.NewEVM(context, state, b.etrue.chainConfig, vmCfg), vmError, nil
+	return vm.NewEVM(context, state, b.etrue.blockchain.Config(), vmCfg), vmError, nil
 }
 
 // SubscribeRemovedLogsEvent registers a subscription of RemovedLogsEvent in fast blockchain
@@ -339,6 +339,7 @@ func (b *TrueAPIBackend) BloomStatus() (uint64, uint64) {
 	sections, _, _ := b.etrue.bloomIndexer.Sections()
 	return params.BloomBitsBlocks, sections
 }
+
 // ServiceFilter make the Filter for the truechian
 func (b *TrueAPIBackend) ServiceFilter(ctx context.Context, session *bloombits.MatcherSession) {
 	for i := 0; i < bloomFilterThreads; i++ {

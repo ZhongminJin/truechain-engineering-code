@@ -44,7 +44,7 @@ func WriteCanonicalHash(db etruedb.Writer, hash common.Hash, number uint64) {
 }
 
 // DeleteCanonicalHash removes the number to hash canonical mapping.
-func DeleteCanonicalHash(db etruedb.Deleter, number uint64) {
+func DeleteCanonicalHash(db etruedb.Writer, number uint64) {
 	if err := db.Delete(headerHashKey(number)); err != nil {
 		log.Crit("Failed to delete number to hash mapping", "err", err)
 	}
@@ -230,7 +230,7 @@ func WriteHeader(db etruedb.Writer, header *types.Header) {
 }
 
 // DeleteHeader removes all block header data associated with a hash.
-func DeleteHeader(db etruedb.Deleter, hash common.Hash, number uint64) {
+func DeleteHeader(db etruedb.Writer, hash common.Hash, number uint64) {
 	if err := db.Delete(headerKey(number, hash)); err != nil {
 		log.Crit("Failed to delete header", "err", err)
 	}
@@ -284,7 +284,7 @@ func WriteBody(db etruedb.Writer, hash common.Hash, number uint64, body *types.B
 }
 
 // DeleteBody removes all block body data associated with a hash.
-func DeleteBody(db etruedb.Deleter, hash common.Hash, number uint64) {
+func DeleteBody(db etruedb.Writer, hash common.Hash, number uint64) {
 	if err := db.Delete(blockBodyKey(number, hash)); err != nil {
 		log.Crit("Failed to delete block body", "err", err)
 	}
@@ -350,6 +350,9 @@ func ReadReceipts(db etruedb.Reader, hash common.Hash, number uint64) types.Rece
 			logIndex += 1
 		}
 		receipts[i] = (*types.Receipt)(receipt)
+		receipts[i].BlockHash = hash
+		receipts[i].BlockNumber = big.NewInt(0).SetUint64(number)
+		receipts[i].TransactionIndex = uint(i)
 	}
 	return receipts
 }
@@ -371,7 +374,7 @@ func WriteReceipts(db etruedb.Writer, hash common.Hash, number uint64, receipts 
 }
 
 // DeleteReceipts removes all receipt data associated with a block hash.
-func DeleteReceipts(db etruedb.Deleter, hash common.Hash, number uint64) {
+func DeleteReceipts(db etruedb.Writer, hash common.Hash, number uint64) {
 	if err := db.Delete(blockReceiptsKey(number, hash)); err != nil {
 		log.Crit("Failed to delete block receipts", "err", err)
 	}
@@ -418,7 +421,7 @@ func WriteBlock(db etruedb.Writer, block *types.Block) {
 }
 
 // DeleteBlock removes all block data associated with a hash.
-func DeleteBlock(db etruedb.Deleter, hash common.Hash, number uint64) {
+func DeleteBlock(db etruedb.Writer, hash common.Hash, number uint64) {
 	DeleteReceipts(db, hash, number)
 	DeleteHeader(db, hash, number)
 	DeleteBody(db, hash, number)
@@ -461,7 +464,7 @@ func WriteBlockReward(db etruedb.Writer, block *types.BlockReward) {
 }
 
 // DeleteReceipts removes all receipt data associated with a block hash.
-func DeleteBlockReward(db etruedb.Deleter, hash common.Hash, number uint64) {
+func DeleteBlockReward(db etruedb.Writer, hash common.Hash, number uint64) {
 	if err := db.Delete(blockRewardKey(number)); err != nil {
 		log.Crit("Failed to delete block BlockReward", "err", err)
 	}
