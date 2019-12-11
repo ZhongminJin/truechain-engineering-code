@@ -125,8 +125,13 @@ func New(ctx *node.ServiceContext, config *Config) (*Truechain, error) {
 	if !config.SyncMode.IsValid() {
 		return nil, fmt.Errorf("invalid sync mode %d", config.SyncMode)
 	}
+	if config.NoPruning && config.TrieDirtyCache > 0 {
+		config.TrieCleanCache += config.TrieDirtyCache
+		config.TrieDirtyCache = 0
+	}
+	log.Info("Allocated trie memory caches", "clean", common.StorageSize(config.TrieCleanCache)*1024*1024, "dirty", common.StorageSize(config.TrieDirtyCache)*1024*1024)
+
 	chainDb, err := ctx.OpenDatabase("chaindata", config.DatabaseCache, config.DatabaseHandles, "etrue/db/chaindata/")
-	//chainDb, err := CreateDB(ctx, config, path)
 	if err != nil {
 		return nil, err
 	}
@@ -167,8 +172,17 @@ func New(ctx *node.ServiceContext, config *Config) (*Truechain, error) {
 		rawdb.WriteDatabaseVersion(chainDb, core.BlockChainVersion)
 	}
 	var (
-		vmConfig    = vm.Config{EnablePreimageRecording: config.EnablePreimageRecording}
-		cacheConfig = &core.CacheConfig{Deleted: config.DeletedState, Disabled: config.NoPruning, TrieNodeLimit: config.TrieCache, TrieTimeLimit: config.TrieTimeout}
+		vmConfig = vm.Config{
+			EnablePreimageRecording: config.EnablePreimageRecording,
+			EWASMInterpreter:        config.EWASMInterpreter,
+			EVMInterpreter:          config.EVMInterpreter,
+		}
+		cacheConfig = &core.CacheConfig{
+			Deleted:           config.DeletedState,
+			TrieCleanLimit:    config.TrieCleanCache,
+			TrieDirtyLimit:    config.TrieDirtyCache,
+			TrieDirtyDisabled: config.NoPruning,
+			TrieTimeLimit:     config.TrieTimeout}
 	)
 
 	etrue.blockchain, err = core.NewBlockChain(chainDb, cacheConfig, chainConfig, etrue.engine, vmConfig)

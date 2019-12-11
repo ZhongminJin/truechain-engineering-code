@@ -19,8 +19,8 @@ package trie
 import (
 	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common/prque"
 	"github.com/truechain/truechain-engineering-code/common"
+	"github.com/truechain/truechain-engineering-code/common/prque"
 	"github.com/truechain/truechain-engineering-code/etruedb"
 )
 

@@ -4,6 +4,7 @@ package etrue
 
 import (
 	"math/big"
+	"time"
 
 	"github.com/truechain/truechain-engineering-code/common"
 	"github.com/truechain/truechain-engineering-code/common/hexutil"
@@ -13,13 +14,14 @@ import (
 	"github.com/truechain/truechain-engineering-code/etrue/gasprice"
 )
 
-var _ = (*configMarshaling)(nil)
-
+// MarshalTOML marshals as TOML.
 func (c Config) MarshalTOML() (interface{}, error) {
 	type Config struct {
 		Genesis                 *core.Genesis `toml:",omitempty"`
 		NetworkId               uint64
 		SyncMode                downloader.SyncMode
+		NoPruning               bool
+		NoPrefetch              bool
 		LightServ               int           `toml:",omitempty"`
 		LightPeers              int           `toml:",omitempty"`
 		EnableElection          bool          `toml:",omitempty"`
@@ -30,6 +32,9 @@ func (c Config) MarshalTOML() (interface{}, error) {
 		SkipBcVersionCheck      bool          `toml:"-"`
 		DatabaseHandles         int           `toml:"-"`
 		DatabaseCache           int
+		TrieCleanCache          int
+		TrieDirtyCache          int
+		TrieTimeout             time.Duration
 		Etherbase               common.Address `toml:",omitempty"`
 		MinerThreads            int            `toml:",omitempty"`
 		ExtraData               hexutil.Bytes  `toml:",omitempty"`
@@ -39,11 +44,15 @@ func (c Config) MarshalTOML() (interface{}, error) {
 		GPO                     gasprice.Config
 		EnablePreimageRecording bool
 		DocRoot                 string `toml:"-"`
+		EWASMInterpreter        string
+		EVMInterpreter          string
 	}
 	var enc Config
 	enc.Genesis = c.Genesis
 	enc.NetworkId = c.NetworkId
 	enc.SyncMode = c.SyncMode
+	enc.NoPruning = c.NoPruning
+	enc.NoPrefetch = c.NoPrefetch
 	enc.LightServ = c.LightServ
 	enc.LightPeers = c.LightPeers
 	enc.EnableElection = c.EnableElection
@@ -54,6 +63,9 @@ func (c Config) MarshalTOML() (interface{}, error) {
 	enc.SkipBcVersionCheck = c.SkipBcVersionCheck
 	enc.DatabaseHandles = c.DatabaseHandles
 	enc.DatabaseCache = c.DatabaseCache
+	enc.TrieCleanCache = c.TrieCleanCache
+	enc.TrieDirtyCache = c.TrieDirtyCache
+	enc.TrieTimeout = c.TrieTimeout
 	enc.Etherbase = c.Etherbase
 	enc.MinerThreads = c.MinerThreads
 	enc.ExtraData = c.ExtraData
@@ -63,6 +75,8 @@ func (c Config) MarshalTOML() (interface{}, error) {
 	enc.GPO = c.GPO
 	enc.EnablePreimageRecording = c.EnablePreimageRecording
 	enc.DocRoot = c.DocRoot
+	enc.EWASMInterpreter = c.EWASMInterpreter
+	enc.EVMInterpreter = c.EVMInterpreter
 	return &enc, nil
 }
 
@@ -71,6 +85,8 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 		Genesis                 *core.Genesis `toml:",omitempty"`
 		NetworkId               *uint64
 		SyncMode                *downloader.SyncMode
+		NoPruning               *bool
+		NoPrefetch              *bool
 		EnableElection          *bool          `toml:",omitempty"`
 		CommitteeKey            *hexutil.Bytes `toml:",omitempty"`
 		Host                    *string        `toml:",omitempty"`
@@ -81,6 +97,9 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 		SkipBcVersionCheck      *bool          `toml:"-"`
 		DatabaseHandles         *int           `toml:"-"`
 		DatabaseCache           *int
+		TrieCleanCache          *int
+		TrieDirtyCache          *int
+		TrieTimeout             *time.Duration
 		Etherbase               *common.Address `toml:",omitempty"`
 		MinerThreads            *int            `toml:",omitempty"`
 		ExtraData               *hexutil.Bytes  `toml:",omitempty"`
@@ -90,6 +109,8 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 		GPO                     *gasprice.Config
 		EnablePreimageRecording *bool
 		DocRoot                 *string `toml:"-"`
+		EWASMInterpreter        *string
+		EVMInterpreter          *string
 	}
 	var dec Config
 	if err := unmarshal(&dec); err != nil {
@@ -103,6 +124,12 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 	}
 	if dec.SyncMode != nil {
 		c.SyncMode = *dec.SyncMode
+	}
+	if dec.NoPruning != nil {
+		c.NoPruning = *dec.NoPruning
+	}
+	if dec.NoPrefetch != nil {
+		c.NoPrefetch = *dec.NoPrefetch
 	}
 	if dec.EnableElection != nil {
 		c.EnableElection = *dec.EnableElection
@@ -134,6 +161,15 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 	if dec.DatabaseCache != nil {
 		c.DatabaseCache = *dec.DatabaseCache
 	}
+	if dec.TrieCleanCache != nil {
+		c.TrieCleanCache = *dec.TrieCleanCache
+	}
+	if dec.TrieDirtyCache != nil {
+		c.TrieDirtyCache = *dec.TrieDirtyCache
+	}
+	if dec.TrieTimeout != nil {
+		c.TrieTimeout = *dec.TrieTimeout
+	}
 	if dec.Etherbase != nil {
 		c.Etherbase = *dec.Etherbase
 	}
@@ -160,6 +196,12 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 	}
 	if dec.DocRoot != nil {
 		c.DocRoot = *dec.DocRoot
+	}
+	if dec.EWASMInterpreter != nil {
+		c.EWASMInterpreter = *dec.EWASMInterpreter
+	}
+	if dec.EVMInterpreter != nil {
+		c.EVMInterpreter = *dec.EVMInterpreter
 	}
 	return nil
 }

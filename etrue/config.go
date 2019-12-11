@@ -46,13 +46,14 @@ var DefaultConfig = Config{
 		DatasetsInMem:  1,
 		DatasetsOnDisk: 2,
 	},
-	NetworkId:     19330,
-	LightPeers:    100,
-	DatabaseCache: 768,
-	TrieCache:     256,
-	TrieTimeout:   60 * time.Minute,
-	MinerGasFloor: 12000000,
-	MinerGasCeil:  16000000,
+	NetworkId:      19330,
+	LightPeers:     100,
+	DatabaseCache:  512,
+	TrieCleanCache: 256,
+	TrieDirtyCache: 256,
+	TrieTimeout:    60 * time.Minute,
+	MinerGasFloor:  12000000,
+	MinerGasCeil:   16000000,
 	//GasPrice:      big.NewInt(18 * params.Shannon),
 
 	GasPrice: big.NewInt(1 * params.Babbage),
@@ -99,9 +100,11 @@ type Config struct {
 	// SnailGenesis *snailchain.Genesis
 
 	// Protocol options
-	NetworkId    uint64 // Network ID to use for selecting peers to connect to
-	SyncMode     downloader.SyncMode
-	NoPruning    bool
+	NetworkId uint64 // Network ID to use for selecting peers to connect to
+	SyncMode  downloader.SyncMode
+
+	NoPruning    bool // Whether to disable pruning and flush everything to disk
+	NoPrefetch   bool // Whether to disable prefetching and only load state on demand
 	DeletedState bool
 
 	// Whitelist of required block number -> hash values to accept
@@ -137,7 +140,8 @@ type Config struct {
 	SkipBcVersionCheck bool `toml:"-"`
 	DatabaseHandles    int  `toml:"-"`
 	DatabaseCache      int
-	TrieCache          int
+	TrieCleanCache     int
+	TrieDirtyCache     int
 	TrieTimeout        time.Duration
 
 	// Mining-related options
@@ -165,6 +169,11 @@ type Config struct {
 
 	// Miscellaneous options
 	DocRoot string `toml:"-"`
+
+	// Type of the EWASM interpreter ("" for detault)
+	EWASMInterpreter string
+	// Type of the EVM interpreter ("" for default)
+	EVMInterpreter string
 
 	// true indicate singlenode start
 	NodeType bool `toml:",omitempty"`
