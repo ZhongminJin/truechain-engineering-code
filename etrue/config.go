@@ -175,6 +175,9 @@ type Config struct {
 	// Type of the EVM interpreter ("" for default)
 	EVMInterpreter string
 
+	// RPCGasCap is the global gas cap for eth-call variants.
+	RPCGasCap *big.Int `toml:",omitempty"`
+
 	// true indicate singlenode start
 	NodeType bool `toml:",omitempty"`
 

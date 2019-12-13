@@ -339,6 +339,10 @@ func (b *TrueAPIBackend) SnailPoolStats() (pending int, unVerified int) {
 	return b.etrue.SnailPool().Stats()
 }
 
+func (b *TrueAPIBackend) RPCGasCap() *big.Int {
+	return b.etrue.config.RPCGasCap
+}
+
 // BloomStatus returns Bloom Status
 func (b *TrueAPIBackend) BloomStatus() (uint64, uint64) {
 	sections, _, _ := b.etrue.bloomIndexer.Sections()
