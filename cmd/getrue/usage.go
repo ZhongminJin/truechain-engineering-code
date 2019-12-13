@@ -133,6 +133,8 @@ var AppHelpFlagGroups = []flagGroup{
 		Flags: []cli.Flag{
 			utils.UnlockedAccountFlag,
 			utils.PasswordFileFlag,
+			utils.ExternalSignerFlag,
+			utils.InsecureUnlockAllowedFlag,
 		},
 	},
 	{

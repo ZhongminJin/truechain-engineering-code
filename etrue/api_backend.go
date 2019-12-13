@@ -39,8 +39,9 @@ import (
 
 // TRUEAPIBackend implements ethapi.Backend for full nodes
 type TrueAPIBackend struct {
-	etrue *Truechain
-	gpo   *gasprice.Oracle
+	extRPCEnabled bool
+	etrue         *Truechain
+	gpo           *gasprice.Oracle
 }
 
 // ChainConfig returns the active chain configuration.
@@ -317,6 +318,10 @@ func (b *TrueAPIBackend) EventMux() *event.TypeMux {
 // AccountManager returns Account Manager
 func (b *TrueAPIBackend) AccountManager() *accounts.Manager {
 	return b.etrue.AccountManager()
+}
+
+func (b *TrueAPIBackend) ExtRPCEnabled() bool {
+	return b.extRPCEnabled
 }
 
 // SnailPoolContent returns snail pool content

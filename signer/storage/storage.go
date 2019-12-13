@@ -60,3 +60,11 @@ func NewEphemeralStorage() Storage {
 	}
 	return s
 }
+
+// NoStorage is a dummy construct which doesn't remember anything you tell it
+type NoStorage struct{}
+
+func (s *NoStorage) Put(key, value string) {}
+func (s *NoStorage) Get(key string) string {
+	return ""
+}

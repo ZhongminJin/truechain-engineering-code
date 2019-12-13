@@ -253,7 +253,7 @@ func New(ctx *node.ServiceContext, config *Config) (*Truechain, error) {
 		etrue.miner.SetElection(etrue.config.EnableElection, crypto.FromECDSAPub(&committeeKey.PublicKey))
 	}
 
-	etrue.APIBackend = &TrueAPIBackend{etrue, nil}
+	etrue.APIBackend = &TrueAPIBackend{ctx.ExtRPCEnabled(), etrue, nil}
 	gpoParams := config.GPO
 	if gpoParams.Default == nil {
 		gpoParams.Default = config.GasPrice
@@ -434,7 +434,7 @@ func (s *Truechain) StartMining(local bool) error {
 				log.Error("Etherbase account unavailable locally", "err", err)
 				return fmt.Errorf("signer missing: %v", err)
 			}
-			clique.Authorize(eb, wallet.SignHash)
+			clique.Authorize(eb, wallet.SignData)
 		}*/
 
 	if local {

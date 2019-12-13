@@ -21,8 +21,8 @@ import (
 	"context"
 	"math/big"
 
-	"github.com/truechain/truechain-engineering-code/common"
 	"github.com/truechain/truechain-engineering-code/accounts"
+	"github.com/truechain/truechain-engineering-code/common"
 	"github.com/truechain/truechain-engineering-code/core"
 	"github.com/truechain/truechain-engineering-code/core/state"
 	"github.com/truechain/truechain-engineering-code/core/types"
@@ -44,6 +44,7 @@ type Backend interface {
 	ChainDb() etruedb.Database
 	EventMux() *event.TypeMux
 	AccountManager() *accounts.Manager
+	ExtRPCEnabled() bool
 
 	// BlockChain API
 	SetHead(number uint64)

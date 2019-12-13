@@ -21,14 +21,14 @@ import (
 	"math/big"
 	"sync"
 
-	"github.com/truechain/truechain-engineering-code/common"
-	"github.com/truechain/truechain-engineering-code/common/hexutil"
-	"github.com/truechain/truechain-engineering-code/log"
 	truechain "github.com/truechain/truechain-engineering-code"
 	"github.com/truechain/truechain-engineering-code/accounts"
+	"github.com/truechain/truechain-engineering-code/common"
+	"github.com/truechain/truechain-engineering-code/common/hexutil"
 	"github.com/truechain/truechain-engineering-code/core/types"
 	"github.com/truechain/truechain-engineering-code/event"
 	"github.com/truechain/truechain-engineering-code/internal/trueapi"
+	"github.com/truechain/truechain-engineering-code/log"
 	"github.com/truechain/truechain-engineering-code/rpc"
 	"github.com/truechain/truechain-engineering-code/signer/core"
 )
@@ -149,6 +149,10 @@ func (api *ExternalSigner) SelfDerive(bases []accounts.DerivationPath, chain tru
 
 func (api *ExternalSigner) signHash(account accounts.Account, hash []byte) ([]byte, error) {
 	return []byte{}, fmt.Errorf("operation not supported on external signers")
+}
+
+func (ks *ExternalSigner) SignTx_Payment(a accounts.Account, tx *types.Transaction, chainID *big.Int) (*types.Transaction, error) {
+	return nil, nil
 }
 
 // SignData signs keccak256(data). The mimetype parameter describes the type of data being signed

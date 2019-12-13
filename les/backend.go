@@ -166,6 +166,8 @@ func New(ctx *node.ServiceContext, config *etrue.Config) (*LightEtrue, error) {
 		log.Warn("Ultra light client is enabled")
 		leth.blockchain.DisableCheckFreq()
 	}
+	leth.ApiBackend = &LesApiBackend{ctx.ExtRPCEnabled(), leth, nil}
+
 	return leth, nil
 }
 

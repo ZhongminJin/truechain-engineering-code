@@ -251,6 +251,11 @@ func (n *Node) Start() error {
 	return nil
 }
 
+// Config returns the configuration of node.
+func (n *Node) Config() *Config {
+	return n.config
+}
+
 func (n *Node) openDataDir() error {
 	if n.config.DataDir == "" {
 		return nil // ephemeral
@@ -585,11 +590,6 @@ func (n *Node) WSEndpoint() string {
 // the current protocol stack.
 func (n *Node) EventMux() *event.TypeMux {
 	return n.eventmux
-}
-
-func (n *Node) Config() *Config {
-	copy := *n.config
-	return &copy
 }
 
 // OpenDatabase opens an existing database with the given name (or creates one if no

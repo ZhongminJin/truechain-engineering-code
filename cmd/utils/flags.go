@@ -164,14 +164,6 @@ var (
 		Name:  "exitwhensynced",
 		Usage: "Exits after block synchronisation completes",
 	}
-	/*FastSyncFlag = cli.BoolFlag{
-		Name:  "fast",
-		Usage: "Enable fast syncing through state downloads (replaced by --syncmode)",
-	}
-	LightModeFlag = cli.BoolFlag{
-		Name:  "light",
-		Usage: "Enable light client mode (replaced by --syncmode)",
-	}*/
 	//SingleNodeFlag is single node setting
 	SingleNodeFlag = cli.BoolFlag{
 		Name:  "singlenode",
@@ -211,7 +203,7 @@ var (
 	defaultSyncMode = etrue.DefaultConfig.SyncMode
 	SyncModeFlag    = TextMarshalerFlag{
 		Name:  "syncmode",
-		Usage: `Blockchain sync mode ("full", or "snapshot")`,
+		Usage: `Blockchain sync mode ("fast", "full", or "snapshot")`,
 		Value: &defaultSyncMode,
 	}
 	GCModeFlag = cli.StringFlag{
@@ -411,10 +403,18 @@ var (
 		Usage: "Password file to use for non-interactive password input",
 		Value: "",
 	}
-
+	ExternalSignerFlag = cli.StringFlag{
+		Name:  "signer",
+		Usage: "External signer (url or path to ipc file)",
+		Value: "",
+	}
 	VMEnableDebugFlag = cli.BoolFlag{
 		Name:  "vmdebug",
 		Usage: "Record information useful for VM and contract debugging",
+	}
+	InsecureUnlockAllowedFlag = cli.BoolFlag{
+		Name:  "allow-insecure-unlock",
+		Usage: "Allow insecure account unlocking when account-related RPCs are exposed by http",
 	}
 	// Logging and debug settings
 	EtrueStatsURLFlag = cli.StringFlag{
@@ -907,6 +907,26 @@ func setEtherbase(ctx *cli.Context, ks *keystore.KeyStore, cfg *etrue.Config) {
 		}
 		cfg.Etherbase = account.Address
 	}
+
+	var etherbase string
+	if ctx.GlobalIsSet(EtherbaseFlag.Name) {
+		etherbase = ctx.GlobalString(EtherbaseFlag.Name)
+	}
+	if ctx.GlobalIsSet(CoinbaseFlag.Name) {
+		etherbase = ctx.GlobalString(CoinbaseFlag.Name)
+	}
+	// Convert the etherbase into an address and configure it
+	if etherbase != "" {
+		if ks != nil {
+			account, err := MakeAddress(ks, etherbase)
+			if err != nil {
+				Fatalf("Invalid miner etherbase: %v", err)
+			}
+			cfg.Etherbase = account.Address
+		} else {
+			Fatalf("No etherbase configured")
+		}
+	}
 }
 
 // MakePasswordList reads password lines from the file specified by the global --password flag.
@@ -997,7 +1017,27 @@ func SetNodeConfig(ctx *cli.Context, cfg *node.Config) {
 	setHTTP(ctx, cfg)
 	setWS(ctx, cfg)
 	setNodeUserIdent(ctx, cfg)
+	setDataDir(ctx, cfg)
 
+	if ctx.GlobalIsSet(ExternalSignerFlag.Name) {
+		cfg.ExternalSigner = ctx.GlobalString(ExternalSignerFlag.Name)
+	}
+
+	if ctx.GlobalIsSet(KeyStoreDirFlag.Name) {
+		cfg.KeyStoreDir = ctx.GlobalString(KeyStoreDirFlag.Name)
+	}
+	if ctx.GlobalIsSet(LightKDFFlag.Name) {
+		cfg.UseLightweightKDF = ctx.GlobalBool(LightKDFFlag.Name)
+	}
+	if ctx.GlobalIsSet(NoUSBFlag.Name) {
+		cfg.NoUSB = ctx.GlobalBool(NoUSBFlag.Name)
+	}
+	if ctx.GlobalIsSet(InsecureUnlockAllowedFlag.Name) {
+		cfg.InsecureUnlockAllowed = ctx.GlobalBool(InsecureUnlockAllowedFlag.Name)
+	}
+}
+
+func setDataDir(ctx *cli.Context, cfg *node.Config) {
 	switch {
 	case ctx.GlobalIsSet(DataDirFlag.Name):
 		cfg.DataDir = ctx.GlobalString(DataDirFlag.Name)
@@ -1007,15 +1047,6 @@ func SetNodeConfig(ctx *cli.Context, cfg *node.Config) {
 		cfg.DataDir = filepath.Join(node.DefaultDataDir(), "devnet")
 	case ctx.GlobalBool(SingleNodeFlag.Name):
 		cfg.DataDir = ctx.GlobalString(DataDirFlag.Name)
-	}
-	if ctx.GlobalIsSet(KeyStoreDirFlag.Name) {
-		cfg.KeyStoreDir = ctx.GlobalString(KeyStoreDirFlag.Name)
-	}
-	if ctx.GlobalIsSet(LightKDFFlag.Name) {
-		cfg.UseLightweightKDF = ctx.GlobalBool(LightKDFFlag.Name)
-	}
-	if ctx.GlobalIsSet(NoUSBFlag.Name) {
-		cfg.NoUSB = ctx.GlobalBool(NoUSBFlag.Name)
 	}
 }
 
@@ -1123,10 +1154,14 @@ func CheckExclusive(ctx *cli.Context, args ...interface{}) {
 func SetTruechainConfig(ctx *cli.Context, stack *node.Node, cfg *etrue.Config) {
 	// Avoid conflicting network flags
 	CheckExclusive(ctx, TestnetFlag, DevnetFlag, SingleNodeFlag)
-	//CheckExclusive(ctx, LightServFlag, LightModeFlag)
 	CheckExclusive(ctx, LightServFlag, SyncModeFlag, "light")
 
-	ks := stack.AccountManager().Backends(keystore.KeyStoreType)[0].(*keystore.KeyStore)
+	// Can't use both ephemeral unlocked and external signer
+	CheckExclusive(ctx, DevnetFlag, ExternalSignerFlag)
+	var ks *keystore.KeyStore
+	if keystores := stack.AccountManager().Backends(keystore.KeyStoreType); len(keystores) > 0 {
+		ks = keystores[0].(*keystore.KeyStore)
+	}
 	setEtherbase(ctx, ks, cfg)
 	setGPO(ctx, &cfg.GPO)
 	setTxPool(ctx, &cfg.TxPool)
@@ -1365,9 +1400,9 @@ func MakeChainDatabase(ctx *cli.Context, stack *node.Node) etruedb.Database {
 		handles = makeDatabaseHandles()
 	)
 	name := "chaindata"
-	/*if ctx.GlobalBool(LightModeFlag.Name) {
+	if ctx.GlobalString(SyncModeFlag.Name) == "light" {
 		name = "lightchaindata"
-	}*/
+	}
 	chainDb, err := stack.OpenDatabase(name, cache, handles, "")
 	if err != nil {
 		Fatalf("Could not open database: %v", err)
