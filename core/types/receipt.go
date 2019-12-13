@@ -82,7 +82,25 @@ type receiptRLP struct {
 	Logs              []*Log
 }
 
-type receiptStorageRLP struct {
+// storedReceiptRLP is the storage encoding of a receipt.
+type storedReceiptRLP struct {
+	PostStateOrStatus []byte
+	CumulativeGasUsed uint64
+	Logs              []*LogForStorage
+}
+
+// v4StoredReceiptRLP is the storage encoding of a receipt used in database version 4.
+type v4StoredReceiptRLP struct {
+	PostStateOrStatus []byte
+	CumulativeGasUsed uint64
+	TxHash            common.Hash
+	ContractAddress   common.Address
+	Logs              []*LogForStorage
+	GasUsed           uint64
+}
+
+// legacyStoredReceiptRLP is the original storage encoding of a receipt including some unnecessary fields.
+type legacyStoredReceiptRLP struct {
 	PostStateOrStatus []byte
 	Status            uint64
 	CumulativeGasUsed uint64
@@ -167,15 +185,10 @@ type ReceiptForStorage Receipt
 // EncodeRLP implements rlp.Encoder, and flattens all content fields of a receipt
 // into an RLP stream.
 func (r *ReceiptForStorage) EncodeRLP(w io.Writer) error {
-	enc := &receiptStorageRLP{
+	enc := &storedReceiptRLP{
 		PostStateOrStatus: (*Receipt)(r).statusEncoding(),
-		Status:            r.Status,
 		CumulativeGasUsed: r.CumulativeGasUsed,
-		Bloom:             r.Bloom,
-		TxHash:            r.TxHash,
-		ContractAddress:   r.ContractAddress,
 		Logs:              make([]*LogForStorage, len(r.Logs)),
-		GasUsed:           r.GasUsed,
 	}
 	for i, log := range r.Logs {
 		enc.Logs[i] = (*LogForStorage)(log)
@@ -186,22 +199,88 @@ func (r *ReceiptForStorage) EncodeRLP(w io.Writer) error {
 // DecodeRLP implements rlp.Decoder, and loads both consensus and implementation
 // fields of a receipt from an RLP stream.
 func (r *ReceiptForStorage) DecodeRLP(s *rlp.Stream) error {
-	var dec receiptStorageRLP
-	if err := s.Decode(&dec); err != nil {
+	blob, err := s.Raw()
+	if err != nil {
 		return err
 	}
-	if err := (*Receipt)(r).setStatus(dec.PostStateOrStatus); err != nil {
+
+	if err := decodeStoredReceiptRLP(r, blob); err == nil {
+		return nil
+	}
+
+	if err := decodeV4StoredReceiptRLP(r, blob); err == nil {
+		return nil
+	}
+
+	return decodeLegacyStoredReceiptRLP(r, blob)
+}
+
+func decodeStoredReceiptRLP(r *ReceiptForStorage, blob []byte) error {
+	var stored storedReceiptRLP
+	if err := rlp.DecodeBytes(blob, &stored); err != nil {
 		return err
 	}
-	r.Status = dec.Status
-	// Assign the consensus fields
-	r.CumulativeGasUsed, r.Bloom = dec.CumulativeGasUsed, dec.Bloom
-	r.Logs = make([]*Log, len(dec.Logs))
-	for i, log := range dec.Logs {
+
+	if err := (*Receipt)(r).setStatus(stored.PostStateOrStatus); err != nil {
+		return err
+	}
+
+	r.CumulativeGasUsed = stored.CumulativeGasUsed
+	r.Logs = make([]*Log, len(stored.Logs))
+	for i, log := range stored.Logs {
 		r.Logs[i] = (*Log)(log)
 	}
-	// Assign the implementation fields
-	r.TxHash, r.ContractAddress, r.GasUsed = dec.TxHash, dec.ContractAddress, dec.GasUsed
+	r.Bloom = CreateBloom(Receipts{(*Receipt)(r)})
+
+	return nil
+}
+
+func decodeV4StoredReceiptRLP(r *ReceiptForStorage, blob []byte) error {
+	var stored v4StoredReceiptRLP
+	if err := rlp.DecodeBytes(blob, &stored); err != nil {
+		return err
+	}
+
+	if err := (*Receipt)(r).setStatus(stored.PostStateOrStatus); err != nil {
+		return err
+	}
+
+	if err := (*Receipt)(r).setStatus(stored.PostStateOrStatus); err != nil {
+		return err
+	}
+	r.CumulativeGasUsed = stored.CumulativeGasUsed
+	r.TxHash = stored.TxHash
+	r.ContractAddress = stored.ContractAddress
+	r.GasUsed = stored.GasUsed
+	r.Logs = make([]*Log, len(stored.Logs))
+	for i, log := range stored.Logs {
+		r.Logs[i] = (*Log)(log)
+	}
+	r.Bloom = CreateBloom(Receipts{(*Receipt)(r)})
+
+	return nil
+}
+
+func decodeLegacyStoredReceiptRLP(r *ReceiptForStorage, blob []byte) error {
+	var stored legacyStoredReceiptRLP
+	if err := rlp.DecodeBytes(blob, &stored); err != nil {
+		return err
+	}
+
+	if err := (*Receipt)(r).setStatus(stored.PostStateOrStatus); err != nil {
+		return err
+	}
+
+	r.CumulativeGasUsed = stored.GasUsed
+	r.Bloom = stored.Bloom
+	r.TxHash = stored.TxHash
+	r.ContractAddress = stored.ContractAddress
+	r.GasUsed = stored.GasUsed
+	r.Logs = make([]*Log, len(stored.Logs))
+	for i, log := range stored.Logs {
+		r.Logs[i] = (*Log)(log)
+	}
+
 	return nil
 }
 

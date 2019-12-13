@@ -1127,7 +1127,7 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 						atomic.AddUint32(&p.invalidCount, 1)
 						continue
 					}
-					results = rawdb.ReadReceipts(pm.chainDb, hash, *number)
+					results = rawdb.ReadRawReceipts(pm.chainDb, hash, *number)
 					if results == nil {
 						if header := pm.fblockchain.GetHeaderByHash(hash); header == nil || header.ReceiptHash != types.EmptyRootHash {
 							continue
@@ -1599,9 +1599,9 @@ func (pm *ProtocolManager) txStatus(hash common.Hash) fast.TxStatus {
 	stat.Status = pm.txpool.Status([]common.Hash{hash})[0]
 	// If the transaction is unknown to the pool, try looking it up locally
 	if stat.Status == core.TxStatusUnknown {
-		if block, number, index := rawdb.ReadTxLookupEntry(pm.chainDb, hash); block != (common.Hash{}) {
+		if tx, blockHash, blockNumber, txIndex := rawdb.ReadTransaction(pm.chainDb, hash); tx != nil {
 			stat.Status = core.TxStatusIncluded
-			stat.Lookup = &rawdb.TxLookupEntry{BlockHash: block, BlockIndex: number, Index: index}
+			stat.Lookup = &rawdb.LegacyTxLookupEntry{BlockHash: blockHash, BlockIndex: blockNumber, Index: txIndex}
 		}
 	}
 	return stat

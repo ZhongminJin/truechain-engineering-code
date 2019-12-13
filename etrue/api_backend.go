@@ -169,7 +169,7 @@ func (b *TrueAPIBackend) GetFruit(ctx context.Context, fastblockHash common.Hash
 // GetReceipts returns the Receipt details by txhash
 func (b *TrueAPIBackend) GetReceipts(ctx context.Context, hash common.Hash) (types.Receipts, error) {
 	if number := rawdb.ReadHeaderNumber(b.etrue.chainDb, hash); number != nil {
-		return rawdb.ReadReceipts(b.etrue.chainDb, hash, *number), nil
+		return rawdb.ReadRawReceipts(b.etrue.chainDb, hash, *number), nil
 	}
 	return nil, nil
 }
@@ -180,7 +180,7 @@ func (b *TrueAPIBackend) GetLogs(ctx context.Context, hash common.Hash) ([][]*ty
 	if number == nil {
 		return nil, nil
 	}
-	receipts := rawdb.ReadReceipts(b.etrue.chainDb, hash, *number)
+	receipts := rawdb.ReadRawReceipts(b.etrue.chainDb, hash, *number)
 	if receipts == nil {
 		return nil, nil
 	}

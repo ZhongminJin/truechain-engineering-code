@@ -161,7 +161,7 @@ func (req *BloomRequest) StoreResult(db etruedb.Database) {
 // TxStatus describes the status of a transaction
 type TxStatus struct {
 	Status core.TxStatus
-	Lookup *rawdb.TxLookupEntry `rlp:"nil"`
+	Lookup *rawdb.LegacyTxLookupEntry `rlp:"nil"`
 	Error  string
 }
 

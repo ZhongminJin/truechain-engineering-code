@@ -27,13 +27,13 @@ import (
 )
 
 // ReadDatabaseVersion retrieves the version number of the database.
-func ReadDatabaseVersion(db etruedb.Reader) int {
-	var version int
+func ReadDatabaseVersion(db etruedb.Reader) *uint64 {
+	var version uint64
 
 	enc, _ := db.Get(databaseVerisionKey)
 	rlp.DecodeBytes(enc, &version)
 
-	return version
+	return &version
 }
 
 // WriteDatabaseVersion stores the version number of the database

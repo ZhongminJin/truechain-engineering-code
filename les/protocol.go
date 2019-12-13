@@ -25,11 +25,11 @@ import (
 	"math/big"
 
 	"github.com/truechain/truechain-engineering-code/common"
-	"github.com/truechain/truechain-engineering-code/crypto"
-	"github.com/truechain/truechain-engineering-code/rlp"
 	"github.com/truechain/truechain-engineering-code/core"
 	"github.com/truechain/truechain-engineering-code/core/rawdb"
+	"github.com/truechain/truechain-engineering-code/crypto"
 	"github.com/truechain/truechain-engineering-code/p2p/enode"
+	"github.com/truechain/truechain-engineering-code/rlp"
 )
 
 // Constants to match up protocol versions and messages
@@ -258,7 +258,7 @@ type CodeData []struct {
 
 type txStatus struct {
 	Status core.TxStatus
-	Lookup *rawdb.TxLookupEntry `rlp:"nil"`
+	Lookup *rawdb.LegacyTxLookupEntry `rlp:"nil"`
 	Error  string
 }
 
