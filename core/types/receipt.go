@@ -18,7 +18,10 @@ package types
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
+	"github.com/truechain/truechain-engineering-code/crypto"
+	"github.com/truechain/truechain-engineering-code/params"
 	"io"
 	"math/big"
 	"unsafe"
@@ -99,8 +102,8 @@ type v4StoredReceiptRLP struct {
 	GasUsed           uint64
 }
 
-// legacyStoredReceiptRLP is the original storage encoding of a receipt including some unnecessary fields.
-type legacyStoredReceiptRLP struct {
+// v3StoredReceiptRLP is the original storage encoding of a receipt including some unnecessary fields.
+type v3StoredReceiptRLP struct {
 	PostStateOrStatus []byte
 	Status            uint64
 	CumulativeGasUsed uint64
@@ -203,16 +206,16 @@ func (r *ReceiptForStorage) DecodeRLP(s *rlp.Stream) error {
 	if err != nil {
 		return err
 	}
-
+	// Try decoding from the newest format for future proofness, then the older one
+	// for old nodes that just upgraded. V4 was an intermediate unreleased format so
+	// we do need to decode it, but it's not common (try last).
 	if err := decodeStoredReceiptRLP(r, blob); err == nil {
 		return nil
 	}
-
-	if err := decodeV4StoredReceiptRLP(r, blob); err == nil {
+	if err := decodeV3StoredReceiptRLP(r, blob); err == nil {
 		return nil
 	}
-
-	return decodeLegacyStoredReceiptRLP(r, blob)
+	return decodeV4StoredReceiptRLP(r, blob)
 }
 
 func decodeStoredReceiptRLP(r *ReceiptForStorage, blob []byte) error {
@@ -261,8 +264,8 @@ func decodeV4StoredReceiptRLP(r *ReceiptForStorage, blob []byte) error {
 	return nil
 }
 
-func decodeLegacyStoredReceiptRLP(r *ReceiptForStorage, blob []byte) error {
-	var stored legacyStoredReceiptRLP
+func decodeV3StoredReceiptRLP(r *ReceiptForStorage, blob []byte) error {
+	var stored v3StoredReceiptRLP
 	if err := rlp.DecodeBytes(blob, &stored); err != nil {
 		return err
 	}
@@ -271,7 +274,7 @@ func decodeLegacyStoredReceiptRLP(r *ReceiptForStorage, blob []byte) error {
 		return err
 	}
 
-	r.CumulativeGasUsed = stored.GasUsed
+	r.CumulativeGasUsed = stored.CumulativeGasUsed
 	r.Bloom = stored.Bloom
 	r.TxHash = stored.TxHash
 	r.ContractAddress = stored.ContractAddress
@@ -297,4 +300,47 @@ func (r Receipts) GetRlp(i int) []byte {
 		panic(err)
 	}
 	return bytes
+}
+
+// DeriveFields fills the receipts with their computed fields based on consensus
+// data and contextual infos like containing block and transactions.
+func (r Receipts) DeriveFields(config *params.ChainConfig, hash common.Hash, number uint64, txs Transactions) error {
+	signer := MakeSigner(config, new(big.Int).SetUint64(number))
+
+	logIndex := uint(0)
+	if len(txs) != len(r) {
+		return errors.New("transaction and receipt count mismatch")
+	}
+	for i := 0; i < len(r); i++ {
+		// The transaction hash can be retrieved from the transaction itself
+		r[i].TxHash = txs[i].Hash()
+
+		// block location fields
+		r[i].BlockHash = hash
+		r[i].BlockNumber = new(big.Int).SetUint64(number)
+		r[i].TransactionIndex = uint(i)
+
+		// The contract address can be derived from the transaction itself
+		if txs[i].To() == nil {
+			// Deriving the signer is expensive, only do if it's actually needed
+			from, _ := Sender(signer, txs[i])
+			r[i].ContractAddress = crypto.CreateAddress(from, txs[i].Nonce())
+		}
+		// The used gas can be calculated based on previous r
+		if i == 0 {
+			r[i].GasUsed = r[i].CumulativeGasUsed
+		} else {
+			r[i].GasUsed = r[i].CumulativeGasUsed - r[i-1].CumulativeGasUsed
+		}
+		// The derived log fields can simply be set from the block and transaction
+		for j := 0; j < len(r[i].Logs); j++ {
+			r[i].Logs[j].BlockNumber = number
+			r[i].Logs[j].BlockHash = hash
+			r[i].Logs[j].TxHash = r[i].TxHash
+			r[i].Logs[j].TxIndex = uint(i)
+			r[i].Logs[j].Index = logIndex
+			logIndex++
+		}
+	}
+	return nil
 }
