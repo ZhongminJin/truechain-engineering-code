@@ -139,8 +139,10 @@ func SendTX(header *types.Header, propagate bool, blockchain *core.BlockChain, t
 					key := delegateKey[j*int(params.NewEpochLength)+i]
 					sendTranction(diff-4-uint64(i), gen, stateDb, mAccount, addr, sendValue, priKey, signer, tx, header)
 					sendDelegateTransaction(diff-uint64(i), gen, addr, saddr1, deleEValue, key, signer, stateDb, blockchain, abiStaking, tx)
-					sendUnDelegateTransaction(diff-types.GetEpochFromID(epoch+1).BeginHeight+firstNumber-uint64(i), gen, addr, saddr1, deleEValue, key, signer, stateDb, blockchain, abiStaking, tx)
-					sendWithdrawDelegateTransaction(diff-types.MinCalcRedeemHeight(epoch+1)+firstNumber-uint64(i), gen, addr, saddr1, deleEValue, key, signer, stateDb, blockchain, abiStaking, tx)
+					if i%(int(seed.Uint64())+2) == 0 {
+						sendUnDelegateTransaction(diff-types.GetEpochFromID(epoch+1).BeginHeight+firstNumber-uint64(i), gen, addr, saddr1, deleEValue, key, signer, stateDb, blockchain, abiStaking, tx)
+						sendWithdrawDelegateTransaction(diff-types.MinCalcRedeemHeight(epoch+1)+firstNumber-uint64(i), gen, addr, saddr1, deleEValue, key, signer, stateDb, blockchain, abiStaking, tx)
+					}
 				}
 			}
 			if diff-types.MinCalcRedeemHeight(epoch+1)+firstNumber-uint64(delegateNum) == 20 {
