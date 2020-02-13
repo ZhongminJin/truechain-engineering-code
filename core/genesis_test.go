@@ -301,7 +301,8 @@ var (
 	key1 = "da5756ffa265ed55dcb741c97e8d3d2f36269df8afcae4b59b0b1f1f8eb58977"
 	addr1 = "0x573baF2a36BFd683F1301db1EeBa1D55fd14De0A"
 	balance1 = new(big.Int).Mul(big.NewInt(1000),big.NewInt(1e18))
-	balance2 = new(big.Int).Mul(big.NewInt(10000),big.NewInt(1e18))
+	balance2 = new(big.Int).Mul(big.NewInt(100000),big.NewInt(1e18))
+	balance3 = new(big.Int).Mul(big.NewInt(10),big.NewInt(1e18))
 	gp       = new(GasPool).AddGas(new(big.Int).Mul(big.NewInt(1),big.NewInt(1e18)).Uint64())
 	code = `0x608060405234801561001057600080fd5b506040516020806101758339810180604052810190808051906020019092919050505060006a747275657374616b696e6790508073ffffffffffffffffffffffffffffffffffffffff1663e1254fba836040518263ffffffff167c0100000000000000000000000000000000000000000000000000000000028152600401808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff168152602001915050606060405180830381600087803b1580156100de57600080fd5b505af11580156100f2573d6000803e3d6000fd5b505050506040513d606081101561010857600080fd5b8101908080519060200190929190805190602001909291908051906020019092919050505050505050506035806101406000396000f3006080604052600080fd00a165627a7a72305820a76679c2a9c73eeafffe41cfccde51b6b5150b920f6d90f25792987d9ab855c400290000000000000000000000006d348e0188cc2596aaa4046a1d50bb3ba50e8524`
 	gasLimit = uint64(3000000)
@@ -459,7 +460,7 @@ func TestReward(t *testing.T) {
 		accounts = []*sa {
 			&sa{
 				address:	generateAddr(),
-				fee:		big.NewInt(20),
+				fee:		big.NewInt(50),
 				amount:		balance2,
 				reward:		big.NewInt(0),
 				pk:			generatePK(),
@@ -526,6 +527,7 @@ func TestReward(t *testing.T) {
 			}
 		}
 	}
+	fmt.Println("reward equal")
 	fmt.Println("finish")
 }
 func calcReward(accounts []*sa) {
@@ -585,4 +587,129 @@ func getReward(addr common.Address,infos []*types.SARewardInfos) *big.Int {
 		}
 	}
 	return reward
+}
+
+func TestRedeem(t *testing.T) {
+	want := uint64(100)
+	params.DposForkPoint = want
+
+	var (
+		accounts = []*sa {
+			&sa{
+				address:	generateAddr(),
+				fee:		big.NewInt(50),
+				amount:		balance2,
+				reward:		big.NewInt(0),
+				pk:			generatePK(),
+				das:		[]*da{
+					&da{
+						address:	generateAddr(),
+						amount:		balance1,
+						reward:		big.NewInt(0),
+					},
+					&da{
+						address:	generateAddr(),
+						amount:		balance1,
+						reward:		big.NewInt(0),
+					},
+				},
+			},
+			&sa{
+				address:	generateAddr(),
+				fee:		big.NewInt(20),
+				amount:		balance2,
+				reward:		big.NewInt(0),
+				pk:			generatePK(),
+				das:		[]*da{
+					&da{
+						address:	generateAddr(),
+						amount:		balance1,
+						reward:		big.NewInt(0),
+					},
+					&da{
+						address:	generateAddr(),
+						amount:		balance1,
+						reward:		big.NewInt(0),
+					},
+				},
+			},
+		}
+	)
+	
+	impl := vm.NewImpawnImpl()
+	for _,val := range accounts {
+		impl.InsertSAccount2(want-5, val.address, val.pk, val.amount, val.fee, true)
+		for _,val2 := range val.das {
+			impl.InsertDAccount2(want-5, val.address, val2.address, val2.amount)
+		}
+	}
+	
+	_, err := impl.DoElections(1, want)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	if err := impl.Shift(1); err != nil  {
+		fmt.Println("shift error:",err)
+	}
+	
+	for i,val := range accounts {
+		if i % 2 == 0 {
+			impl.CancelSAccount(want+2,val.address,balance3)
+			for j,val2 := range val.das {
+				if j % 2 == 0 {
+					impl.CancelDAccount(want+2, val.address, val2.address, balance3)
+				}
+			}
+		}
+	}
+
+	for i,aa := range accounts {
+		fmt.Println("i",i,"display staking..........")
+		res1 := impl.GetStakingAsset(aa.address)
+		displayStakingAsset(res1,false)
+		res2 := impl.GetLockedAsset2(aa.address,uint64(1000))
+		displayLockedAsset(res2,uint64(1000))
+		for j,vv := range aa.das {
+			fmt.Println("i",i,"j",j,"display delegation..........")
+			res3 := impl.GetStakingAsset(vv.address)
+			displayStakingAsset(res3,false)
+			res4 := impl.GetLockedAsset2(aa.address,uint64(1000))
+			displayLockedAsset(res4,uint64(1000))
+		}
+	}
+
+	fmt.Println("finish")
+}
+
+func displayStakingAsset(infos map[common.Address]*types.StakingValue,lock bool) {
+	for k,v := range infos {
+		fmt.Println("address:",k.String(),"staking amount info.................")
+		for kk,vv := range v.Value {
+			if !lock {
+				fmt.Println("staking value:","height:",kk,"value:",vv)
+			} else {
+				fmt.Println("locked value:","epochid:",kk,"value:",vv)
+			}
+		}
+		fmt.Println("address:",k.String(),"staking amount info.................")
+	}
+}
+func displayLockedAsset(infos map[common.Address]*types.LockedValue,height uint64) {
+	for k,v := range infos {
+		fmt.Println("address:",k.String(),"staking amount in locked info.................")
+		for kk,vv := range v.Value {
+			if vv.Locked {
+				e := types.GetEpochFromID(kk + 1)
+				last := e.BeginHeight+params.MaxRedeemHeight - height
+				last = last * 5
+				tt := new(big.Float).Quo(big.NewFloat(float64(last)),big.NewFloat(float64(86400)))
+				fmt.Println("locked value:","epochid:",kk,"value:",vv.Amount,"locked time:",
+				tt.Text('f',6),"days")
+				continue
+			}
+			fmt.Println("locked value:","epochid:",kk,"value:",vv.Amount,"locked:",vv.Locked)
+		}
+		fmt.Println("address:",k.String(),"staking amount in locked info.................")
+	}
 }
